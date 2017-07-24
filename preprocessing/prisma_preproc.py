@@ -8,8 +8,6 @@ import numpy as np
 from nipype import Workflow, Node, MapNode, DataSink
 from nipype.interfaces import fsl, freesurfer as fs
 import json
-import pdb
-from nipype import config
 
 
 def main(arglist):
