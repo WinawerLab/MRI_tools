@@ -15,7 +15,9 @@ def main(arglist):
 
     # Parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-subject', required=True, help='Freesurfer subject id')
+    parser.add_argument('-subject', required=True,
+                        help=('Freesurfer subject id. Note that we use the $SUBJECTS_DIR '
+                              'environmental variable to find the required data'))
     parser.add_argument('-datadir', required=True, help='Raw MR data path')
     parser.add_argument('-outdir', required=True, help='Output directory path')
     parser.add_argument('-epis', required=True, nargs='+', type=int, 
@@ -28,6 +30,16 @@ def main(arglist):
                         help='Distortion scan number with reverse PE as epis')
     parser.add_argument('-PEdim', type=str, default='y', 
                         help='PE dimension (x, y, or z)')
+    parser.add_argument("-plugin", type=str, default="MultiProc",
+                        help=("Nipype plugin to use for running this. MultiProc (default) is "
+                              "normally fine for when running locally, though it may use up all "
+                              "your  computer's resources. Linear is slower, but won't do that."
+                              "SLURM should be used on NYU HPC prince cluster."))
+    parser.add_argument('-working_dir', default=None,
+                        help=("Path to your working directory. By default, this will be within your"
+                              "output directory, but you may want to place it elsewhere. For "
+                              "example, on the HPC cluster, you may run out of space if this is in"
+                              "your /home directory, so you probably want this in /scratch"))
     args = vars(parser.parse_args(arglist))
 
     # Session paths and files
@@ -46,6 +58,13 @@ def main(arglist):
     if not op.exists(session['out']):
         os.makedirs(session['out'])
 
+    if args['working_dir'] is not None:
+        session['working_dir'] = args['working_dir']
+    else:
+        session['working_dir'] = session['out']
+    if not op.exists(session["working_dir"]):
+        os.makedirs(session['working_dir'])
+
     # Dump session info to json
     with open(op.join(session['out'], 'session.json'), 'w') as sess_file:
         json.dump(session, sess_file, sort_keys=True, indent=4)
@@ -54,7 +73,7 @@ def main(arglist):
     preproc_wf = create_preproc_workflow(session)
 
     # Execute workflow in parallel
-    preproc_wf.run('MultiProc')
+    preproc_wf.run(args["plugin"])
 
 
 
@@ -68,7 +87,7 @@ def create_preproc_workflow(session):
     """
 
     #---Create workflow---
-    wf = Workflow(name='workflow', base_dir=session['out'])
+    wf = Workflow(name='workflow', base_dir=session['working_dir'])
 
 
     #---EPI Realignment---
