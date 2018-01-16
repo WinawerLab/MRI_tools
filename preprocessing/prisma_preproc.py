@@ -50,6 +50,13 @@ def main(arglist):
                               "('BIDS')? This determines how we look for the various scans. If "
                               "your data is BIDS-structured, then datadir should point to the "
                               "particular session you want to preprocess as well"))
+    parser.add_argument('-plugin_args', default="",
+                        help=("Any additional arguments to pass to nipype's workflow.run as plugin"
+                              "_args. A single entry in the resulting dictionary should be of the"
+                              " format arg:val (e.g., n_procs:2) with multiple args separated by a"
+                              " comma with no spaces (e.g., n_procs:2,memory_gb:5). see nipype's "
+                              "plugin documentation for more details on possible values: "
+                              "http://nipype.readthedocs.io/en/latest/users/plugins.html. "))
     args = vars(parser.parse_args(arglist))
 
     # Session paths and files
@@ -64,10 +71,11 @@ def main(arglist):
         session['distort_revPE'] = glob(session['nii_temp'] %args['distortrevPE'])[0]
     elif args['dir_structure'] == 'bids':
         session['nii_temp'] = op.join(session['data'], '%s', '*-%02d_%s.nii')
+        session['nii_fmap_temp'] = op.join(session['data'], '%s', '*-%s_%s.nii')
         session['epis'] = [glob(session['nii_temp'] % ('func', r, 'bold'))[0] for r in args['epis']]
         session['sbref'] = glob(session['nii_temp'] % ('func', args['sbref'], 'sbref'))[0]
-        session['distort_PE'] = glob(session['nii_temp'] % ('fmap', args['distortPE'], 'epi'))[0]
-        session['distort_revPE'] = glob(session['nii_temp'] % ('fmap', args['distortrevPE'], 'epi'))[0]
+        session['distort_PE'] = glob(session['nii_fmap_temp'] % ('fmap', args['distortPE'], 'epi'))[0]
+        session['distort_revPE'] = glob(session['nii_fmap_temp'] % ('fmap', args['distortrevPE'], 'epi'))[0]
     else:
         raise Exception("Don't know what to do with dir_structure %s!" % args['dir_structure'])
     session['PE_dim'] = args['PEdim']
@@ -84,6 +92,20 @@ def main(arglist):
     if not op.exists(session["working_dir"]):
         os.makedirs(session['working_dir'])
 
+    session['plugin_args'] = {}
+    for arg in args['plugin_args'].split(','):
+        if len(arg.split(':'))!=2:
+            raise Exception("Your plugin_args is incorrectly formatted, each should contain one colon!")
+        k, v = arg.split(':')
+        try:
+            session['plugin_args'][k] = int(v)
+        except ValueError:
+            try:
+                session['plugin_args'][k] = float(v)
+            except ValueError:
+                session['plugin_args'][k] = v
+    session['plugin'] = args['plugin']
+
     # Dump session info to json
     with open(op.join(session['out'], 'session.json'), 'w') as sess_file:
         json.dump(session, sess_file, sort_keys=True, indent=4)
@@ -92,7 +114,7 @@ def main(arglist):
     preproc_wf = create_preproc_workflow(session)
 
     # Execute workflow in parallel
-    preproc_wf.run(args["plugin"])
+    preproc_wf.run(session["plugin"], plugin_args=session['plugin_args'])
 
 
 
