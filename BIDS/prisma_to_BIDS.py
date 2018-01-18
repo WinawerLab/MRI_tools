@@ -57,14 +57,14 @@ def _construct_base_filename(example_file, output_dir, data_type, run_flag=False
                                               "dir", "ce"]))
     if session_label is None:
         subj_dir = os.path.join(subj_dir, data_type)
-        if os.path.exists(os.path.join(subj_dir, data_type)):
-            raise Exception("subj_dir already exists but you have no session_label set! You need a "
-                            "session_label if subject has multiple sessions")
+        if os.path.exists(os.path.join(subj_dir)):
+            raise IOError("subj_dir already exists but you have no session_label set! You need a "
+                          "session_label if subject has multiple sessions")
     else:
         subj_dir = os.path.join(subj_dir, "ses-%s" % session_label, data_type)
         filename_kw["session"] = "_ses-%s" % session_label
         if os.path.exists(subj_dir):
-            raise Exception("The session_label %s has already been used, choose another!" % session_label)
+            raise IOError("The session_label %s has already been used, choose another!" % session_label)
     if task_label is not None:
         filename_kw['task'] = "_task-%s" % task_label
     if acq_label is not None:
@@ -160,7 +160,7 @@ def copy_func(data_dir, output_dir, epis, sbrefs, task_label, session_label=None
             tr /= 1000
         elif t_units != 'sec':
             raise Exception("Don't know how to handle units %s for TR" % t_units)
-        bold_dict = {"TaskName": task_label, 'RepetitionTime': tr}
+        bold_dict = {"TaskName": task_label, 'RepetitionTime': float(tr)}
         with open(os.path.join(subj_dir, epi_filename % (i+1, 'json')), 'w') as f:
             json.dump(bold_dict, f)
 
