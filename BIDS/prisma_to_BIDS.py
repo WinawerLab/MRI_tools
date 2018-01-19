@@ -22,6 +22,7 @@ import shutil
 import re
 import subprocess
 import json
+from collections import Counter
 import nibabel as nib
 
 # to see if we have pydeface.py available. if this runs without
@@ -276,3 +277,42 @@ def copy_anat(data_dir, output_dir, anat_nums, modality_label, session_label=Non
             shutil.copy(anat_file, os.path.join(subj_dir, base_filename % ext))
         else:
             shutil.copy(anat_file, os.path.join(subj_dir, base_filename % (run_label[i], ext)))
+
+
+def json_check(dir_to_check):
+    """check whether we can consolidate the jsons in a directory
+
+    this goes through all the jsons in the specified directory and determines what keys we can
+    consolidate. following the BIDS inheritance principle, this means we create a json in the
+    directory further up containing those keys and its assumed that everything in the
+    sub-directories has those same values. for example, if all the differnt run*.json files in our
+    func directory have the same RepetitionTime (which is likely), this will remove that key from
+    all those files and put it in a json file without the run indicator on directory up
+    """
+    json_files = dict((f, None) for f in glob.glob(os.path.join(dir_to_check, "*.json")))
+    for jf in json_files.iterkeys():
+        with open(jf) as f:
+            json_files[jf] = json.load(f)
+    shared_dict = {}
+    all_keys = {k for jd in json_files.itervalues() for k in jd.iterkeys()}
+    for k in all_keys:
+        try:
+            all_vals = [jd[k] for jd in json_files.itervalues()]
+            most_common_val = Counter(all_vals).most_common()[0][0]
+            shared_dict[k] = most_common_val
+        except KeyError:
+            pass
+    for jf, jd in json_files.iteritems():
+        for k in shared_dict.iterkeys():
+            if shared_dict[k] == jd[k]:
+                jd.pop(k)
+        os.remove(jf)
+        if any(jd.keys()):
+            with open(jf, 'w') as f:
+                json.dump(jd, f)
+    sup_dir = os.path.dirname(os.path.dirname(json_files.keys()[0]))
+    name_parts = os.path.split(json_files.keys()[0])[-1].split("_")
+    for k in json_files.keys()[1:]:
+        name_parts = [n for n in name_parts if n in os.path.split(k)[-1].split("_")]
+    with open(os.path.join(sup_dir, "_".join(name_parts)), 'w') as f:
+        json.dump(shared_dict, f)
