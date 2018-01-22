@@ -50,7 +50,7 @@ def main(arglist):
                               "('BIDS')? This determines how we look for the various scans. If "
                               "your data is BIDS-structured, then datadir should point to the "
                               "particular session you want to preprocess as well"))
-    parser.add_argument('-plugin_args', default="",
+    parser.add_argument('-plugin_args', default=None,
                         help=("Any additional arguments to pass to nipype's workflow.run as plugin"
                               "_args. A single entry in the resulting dictionary should be of the"
                               " format arg:val (e.g., n_procs:2) with multiple args separated by a"
@@ -67,8 +67,11 @@ def main(arglist):
         session['nii_temp'] = op.join(session['data'], '%02d+*', '*.nii')
         session['epis'] = [glob(session['nii_temp'] %r)[0] for r in args['epis']]
         session['sbref'] = glob(session['nii_temp'] %args['sbref'])[0]
-        session['distort_PE'] = glob(session['nii_temp'] %args['distortPE'])[0]
-        session['distort_revPE'] = glob(session['nii_temp'] %args['distortrevPE'])[0]
+        # this is a bit of a hack. for the bids structure, these two values will be strings and so
+        # we can't set type=int in the argparse arguments above. however, we do want to use %02d
+        # formatting string, so we'll just cast these two as ints here.
+        session['distort_PE'] = glob(session['nii_temp'] %int(args['distortPE']))[0]
+        session['distort_revPE'] = glob(session['nii_temp'] %int(args['distortrevPE']))[0]
     elif args['dir_structure'] == 'bids':
         session['nii_temp'] = op.join(session['data'], '%s', '*-%02d_%s.nii')
         session['nii_fmap_temp'] = op.join(session['data'], '%s', '*-%s_%s.nii')
@@ -93,17 +96,18 @@ def main(arglist):
         os.makedirs(session['working_dir'])
 
     session['plugin_args'] = {}
-    for arg in args['plugin_args'].split(','):
-        if len(arg.split(':'))!=2:
-            raise Exception("Your plugin_args is incorrectly formatted, each should contain one colon!")
-        k, v = arg.split(':')
-        try:
-            session['plugin_args'][k] = int(v)
-        except ValueError:
+    if args['plugin_args'] is not None:
+        for arg in args['plugin_args'].split(','):
+            if len(arg.split(':'))!=2:
+                raise Exception("Your plugin_args is incorrectly formatted, each should contain one colon!")
+            k, v = arg.split(':')
             try:
-                session['plugin_args'][k] = float(v)
+                session['plugin_args'][k] = int(v)
             except ValueError:
-                session['plugin_args'][k] = v
+                try:
+                    session['plugin_args'][k] = float(v)
+                except ValueError:
+                    session['plugin_args'][k] = v
     session['plugin'] = args['plugin']
 
     # Dump session info to json
