@@ -10,31 +10,24 @@ This follows the general principle of "never alter data", so files will be copie
 
 For anatomical data, you'll need to check freesurfer recon-all.log (probably at
 Acadia/Freesurfer_subjects/{subj_num}/scripts/recon-all.log) to see which anatomical images were
-used in the recon-all call, and pass them as arguments. this will move them and deface them (using
-Poldrack's lab pydeface, https://github.com/poldracklab/pydeface).
+used in the recon-all call, and pass them as arguments. this will move them and, if possible,
+deface them (using Poldrack's lab pydeface, https://github.com/poldracklab/pydeface).
 
 This is meant to be run one subject at a time, similar to the preprocessing script, also found in
 this repo.
+
+For field map directions, I assume xyz maps to ijk, which is what BIDS wants
 """
+
 import os
 import glob
 import shutil
 import re
 import subprocess
 import json
+from collections import Counter
 import nibabel as nib
-
-# to see if we have pydeface.py available. if this runs without
-# hitting the except, it succeeded.
-# try:
-#     subprocess.call(["pydeface.py", 'in.nii', 'out.nii'])
-# except OSError:
-#     raise Exception("No pydeface.py! Download and install from https://github.com/poldracklab/pydeface")
-
-# sbref should be in functional with _sbref instead of _func. PE are fmap, last version on BIDS
-# specification.
-
-# I assume xyz maps to ijk, which is what BIDS wants
+import warnings
 
 
 def _construct_base_filename(example_file, output_dir, data_type, run_flag=False, task_label=None,
@@ -57,14 +50,14 @@ def _construct_base_filename(example_file, output_dir, data_type, run_flag=False
                                               "dir", "ce"]))
     if session_label is None:
         subj_dir = os.path.join(subj_dir, data_type)
-        if os.path.exists(os.path.join(subj_dir, data_type)):
-            raise Exception("subj_dir already exists but you have no session_label set! You need a "
-                            "session_label if subject has multiple sessions")
+        if os.path.exists(os.path.join(subj_dir)):
+            raise IOError("subj_dir already exists but you have no session_label set! You need a "
+                          "session_label if subject has multiple sessions")
     else:
         subj_dir = os.path.join(subj_dir, "ses-%s" % session_label, data_type)
         filename_kw["session"] = "_ses-%s" % session_label
         if os.path.exists(subj_dir):
-            raise Exception("The session_label %s has already been used, choose another!" % session_label)
+            raise IOError("The session_label %s has already been used, choose another!" % session_label)
     if task_label is not None:
         filename_kw['task'] = "_task-%s" % task_label
     if acq_label is not None:
@@ -160,7 +153,7 @@ def copy_func(data_dir, output_dir, epis, sbrefs, task_label, session_label=None
             tr /= 1000
         elif t_units != 'sec':
             raise Exception("Don't know how to handle units %s for TR" % t_units)
-        bold_dict = {"TaskName": task_label, 'RepetitionTime': tr}
+        bold_dict = {"TaskName": task_label, 'RepetitionTime': float(tr)}
         with open(os.path.join(subj_dir, epi_filename % (i+1, 'json')), 'w') as f:
             json.dump(bold_dict, f)
 
@@ -273,6 +266,59 @@ def copy_anat(data_dir, output_dir, anat_nums, modality_label, session_label=Non
         else:
             ext = 'nii'
         if run_label is None:
-            shutil.copy(anat_file, os.path.join(subj_dir, base_filename % ext))
+            output_path = os.path.join(subj_dir, base_filename % ext)
         else:
-            shutil.copy(anat_file, os.path.join(subj_dir, base_filename % (run_label[i], ext)))
+            output_path = os.path.join(subj_dir, base_filename % (run_label[i], ext))
+        out_code = 0
+        try:
+            out_code = subprocess.call(['pydeface', '--outfile', output_path, anat_file])
+        except OSError:
+            warnings.warn("No pydeface (version 2.0 is required)! Download and install from "
+                          "https://github.com/poldracklab/pydeface We are simply copying over the "
+                          "anatomical data.")
+            shutil.copy(anat_file, output_path)
+        if out_code == 1:
+            raise IOError("Cannot find anatomical file at %s!" % anat_file)
+        elif out_code == 2:
+            warnings.warn("pydeface encountered an error (see above). We'll simply copy over the"
+                          " anatomical data.")
+            shutil.copy(anat_file, output_path)
+
+
+def json_check(dir_to_check):
+    """check whether we can consolidate the jsons in a directory
+
+    this goes through all the jsons in the specified directory and determines what keys we can
+    consolidate. following the BIDS inheritance principle, this means we create a json in the
+    directory further up containing those keys and its assumed that everything in the
+    sub-directories has those same values. for example, if all the differnt run*.json files in our
+    func directory have the same RepetitionTime (which is likely), this will remove that key from
+    all those files and put it in a json file without the run indicator on directory up
+    """
+    json_files = dict((f, None) for f in glob.glob(os.path.join(dir_to_check, "*.json")))
+    for jf in json_files.iterkeys():
+        with open(jf) as f:
+            json_files[jf] = json.load(f)
+    shared_dict = {}
+    all_keys = {k for jd in json_files.itervalues() for k in jd.iterkeys()}
+    for k in all_keys:
+        try:
+            all_vals = [jd[k] for jd in json_files.itervalues()]
+            most_common_val = Counter(all_vals).most_common()[0][0]
+            shared_dict[k] = most_common_val
+        except KeyError:
+            pass
+    for jf, jd in json_files.iteritems():
+        for k in shared_dict.iterkeys():
+            if shared_dict[k] == jd[k]:
+                jd.pop(k)
+        os.remove(jf)
+        if any(jd.keys()):
+            with open(jf, 'w') as f:
+                json.dump(jd, f)
+    sup_dir = os.path.dirname(os.path.dirname(json_files.keys()[0]))
+    name_parts = os.path.split(json_files.keys()[0])[-1].split("_")
+    for k in json_files.keys()[1:]:
+        name_parts = [n for n in name_parts if n in os.path.split(k)[-1].split("_")]
+    with open(os.path.join(sup_dir, "_".join(name_parts)), 'w') as f:
+        json.dump(shared_dict, f)
