@@ -30,7 +30,6 @@ import nibabel as nib
 import warnings
 
 
-
 def _construct_base_filename(example_file, output_dir, data_type, run_flag=False, task_label=None,
                              session_label=None, acq_label=None, rec_label=None, echo_index=None,
                              dir_flag=False, ce_label=None):
@@ -272,18 +271,17 @@ def copy_anat(data_dir, output_dir, anat_nums, modality_label, session_label=Non
             output_path = os.path.join(subj_dir, base_filename % (run_label[i], ext))
         out_code = 0
         try:
-            out_code = subprocess.call(['pydeface', anat_file, output_path])
+            out_code = subprocess.call(['pydeface', '--outfile', output_path, anat_file])
         except OSError:
-            out_code = subprocess.call(['pydeface.py', anat_file, output_path])
-            except OSError:
-                warnings.warn("No pydeface.py! Download and install from https://github.com/poldracklab/pydeface"
-                              " We are simply copying over the anatomical data.")
-                shutil.copy(anat_file, output_path)
-        if out_code==1:
+            warnings.warn("No pydeface (version 2.0 is required)! Download and install from "
+                          "https://github.com/poldracklab/pydeface We are simply copying over the "
+                          "anatomical data.")
+            shutil.copy(anat_file, output_path)
+        if out_code == 1:
             raise IOError("Cannot find anatomical file at %s!" % anat_file)
-        elif out_code==2:
-            warnings.warn("FSL must be installed and FSLDIR environment variable must be defined."
-                          " We are simply copying over the anatomical data.")
+        elif out_code == 2:
+            warnings.warn("pydeface encountered an error (see above). We'll simply copy over the"
+                          " anatomical data.")
             shutil.copy(anat_file, output_path)
 
 
