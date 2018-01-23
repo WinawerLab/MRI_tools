@@ -10,12 +10,15 @@ This follows the general principle of "never alter data", so files will be copie
 
 For anatomical data, you'll need to check freesurfer recon-all.log (probably at
 Acadia/Freesurfer_subjects/{subj_num}/scripts/recon-all.log) to see which anatomical images were
-used in the recon-all call, and pass them as arguments. this will move them and deface them (using
-Poldrack's lab pydeface, https://github.com/poldracklab/pydeface).
+used in the recon-all call, and pass them as arguments. this will move them and, if possible,
+deface them (using Poldrack's lab pydeface, https://github.com/poldracklab/pydeface).
 
 This is meant to be run one subject at a time, similar to the preprocessing script, also found in
 this repo.
+
+For field map directions, I assume xyz maps to ijk, which is what BIDS wants
 """
+
 import os
 import glob
 import shutil
@@ -24,18 +27,8 @@ import subprocess
 import json
 from collections import Counter
 import nibabel as nib
+import warnings
 
-# to see if we have pydeface.py available. if this runs without
-# hitting the except, it succeeded.
-# try:
-#     subprocess.call(["pydeface.py", 'in.nii', 'out.nii'])
-# except OSError:
-#     raise Exception("No pydeface.py! Download and install from https://github.com/poldracklab/pydeface")
-
-# sbref should be in functional with _sbref instead of _func. PE are fmap, last version on BIDS
-# specification.
-
-# I assume xyz maps to ijk, which is what BIDS wants
 
 
 def _construct_base_filename(example_file, output_dir, data_type, run_flag=False, task_label=None,
@@ -274,9 +267,24 @@ def copy_anat(data_dir, output_dir, anat_nums, modality_label, session_label=Non
         else:
             ext = 'nii'
         if run_label is None:
-            shutil.copy(anat_file, os.path.join(subj_dir, base_filename % ext))
+            output_path = os.path.join(subj_dir, base_filename % ext)
         else:
-            shutil.copy(anat_file, os.path.join(subj_dir, base_filename % (run_label[i], ext)))
+            output_path = os.path.join(subj_dir, base_filename % (run_label[i], ext))
+        out_code = 0
+        try:
+            out_code = subprocess.call(['pydeface', anat_file, output_path])
+        except OSError:
+            out_code = subprocess.call(['pydeface.py', anat_file, output_path])
+            except OSError:
+                warnings.warn("No pydeface.py! Download and install from https://github.com/poldracklab/pydeface"
+                              " We are simply copying over the anatomical data.")
+                shutil.copy(anat_file, output_path)
+        if out_code==1:
+            raise IOError("Cannot find anatomical file at %s!" % anat_file)
+        elif out_code==2:
+            warnings.warn("FSL must be installed and FSLDIR environment variable must be defined."
+                          " We are simply copying over the anatomical data.")
+            shutil.copy(anat_file, output_path)
 
 
 def json_check(dir_to_check):
