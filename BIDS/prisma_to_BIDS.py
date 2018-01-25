@@ -76,8 +76,8 @@ def _construct_base_filename(example_file, output_dir, data_type, run_flag=False
     return base_filename.format(**filename_kw), subj_dir
 
 
-def copy_func(data_dir, output_dir, epis, sbrefs, task_label, session_label=None, acq_label=None,
-              rec_label=None, echo_index=None):
+def copy_func(data_dir, output_dir, epis, sbrefs, task_label, PEdim='j', session_label=None,
+              acq_label=None, rec_label=None, echo_index=None):
     """copy functional data to BIDS format
 
     looks for both .nii and .nii.gz files
@@ -103,6 +103,11 @@ def copy_func(data_dir, output_dir, epis, sbrefs, task_label, session_label=None
     the subject directory already exists, session_label is required
 
     task_label: str, task label. str to identify the task, required by BIDS.
+
+    PEdim: Phase encoding dimension. BIDS expects direction to use i, j, and k, but FSL uses x, y,
+    and z. This function accepts both and will map between the two like so: x->i, y->j, z->k. They
+    should either be by themselves (e.g., 'j' or 'y') or have a dash afterwards to show it's
+    reversed (e.g., 'j-' or 'y-').
 
     session_label: str, session label, optional. if there is not subject directory in output_dir
     for this subject, then this is unnecessary. if there *is*, then a session_label is needed.
@@ -153,7 +158,14 @@ def copy_func(data_dir, output_dir, epis, sbrefs, task_label, session_label=None
             tr /= 1000
         elif t_units != 'sec':
             raise Exception("Don't know how to handle units %s for TR" % t_units)
-        bold_dict = {"TaskName": task_label, 'RepetitionTime': float(tr)}
+        possible_PEdims = ['x', 'y', 'z', 'i', 'j', 'k', 'x-', 'y-', 'z-', 'i-', 'j-', 'k-']
+        if PEdim not in possible_PEdims:
+            raise Exception("Don't know how to handle PEdim %s!" % PEdim)
+        phase_dir = {'x': 'i', 'y': 'j', 'z': 'k'}.get(PEdim[0], PEdim[0])
+        if len(PEdim) > 1:
+            phase_dir += '-'
+        bold_dict = {"TaskName": task_label, 'RepetitionTime': float(tr),
+                     'PhaseEncodingDirection': phase_dir}
         with open(os.path.join(subj_dir, epi_filename % (i+1, 'json')), 'w') as f:
             json.dump(bold_dict, f)
 
@@ -172,6 +184,10 @@ def copy_fmap(data_dir, output_dir, distortPE, distortrevPE, PEdim='j', session_
     distortrevPE are single integers, which indicate which of these directories contain the phase
     encoding images, in the same and reverse directions, respectively, as the EPIs.
 
+    NOTE that this should be run *after* the functional scans from the same session have been put
+    into place (say, by running `copy_func`) so that the IntendedFor field of the json can be
+    filled in correctly.
+
     we also make the following other assumptions:
 
     - that this is the BIDS fieldmap case 4 (section 8.9.4 in the specifications pdf): multiple
@@ -181,7 +197,11 @@ def copy_fmap(data_dir, output_dir, distortPE, distortrevPE, PEdim='j', session_
       each volume in each distortion scan and that there are 3 volumes per scan, for a total
       readout time of 3 seconds.
 
-    - that these are inteded for all scans gathered in the same session.
+    - the distortPE scan has phase encoding direction PEdim and distortrevPE has the opposite. In
+      BIDS-speak, this means we assume the distortPE scan has the forward direction (i, j, or k)
+      and distortrevPE has the reverse direction ('i-', 'j-', 'k-')
+
+    - that these are intended for all scans (including SBRefs) gathered in the same session.
 
     - the direction label can be inferred from the filename, which will have DISTORTION_%%, where
       %% are two alphanumeric characters that we'll use for the direction label (note that these
@@ -224,11 +244,16 @@ def copy_fmap(data_dir, output_dir, distortPE, distortrevPE, PEdim='j', session_
             ext = "nii"
         direction = re.search("DISTORTION_([A-Za-z0-9]+)", distort_file).groups()[0]
         shutil.copy(distort_file, os.path.join(subj_dir, base_filename % (direction, ext)))
+        possible_PEdims = ['x', 'y', 'z', 'i', 'j', 'k']
+        if PEdim not in possible_PEdims:
+            raise Exception("Don't know how to handle PEdim %s!" % PEdim)
         phase_dir = {'x': 'i', 'y': 'j', 'z': 'k'}.get(PEdim, PEdim)
         # the reversed distortion scan should have the dash after it.
         if i == 1:
             phase_dir += '-'
-        fmap_dict = {'PhaseEncodingDirection': phase_dir, 'TotalReadoutTime': 3}
+        intended_for = glob.glob(os.path.join(os.path.dirname(subj_dir), 'func', '*.nii'))
+        fmap_dict = {'PhaseEncodingDirection': phase_dir, 'TotalReadoutTime': 3,
+                     'IntendedFor': intended_for}
         with open(os.path.join(subj_dir, base_filename % (direction, "json")), 'w') as f:
             json.dump(fmap_dict, f)
 
