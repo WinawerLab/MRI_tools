@@ -10,6 +10,10 @@ version 2.0 is required to deface anatomical data (in
 simply copy over the anatomical data), which also requires FSL, and
 the preprocessing script requires FSL and Freesurfer.
 
+Additionally, if you want to use the `prisma_preproc.py` to preprocess
+BIDS-formatted data, [pybids](https://github.com/INCF/pybids) is
+required (and can be installed from pip).
+
 # How to use
 
 ## Preprocessing

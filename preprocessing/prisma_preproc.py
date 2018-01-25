@@ -7,6 +7,11 @@ import numpy as np
 from nipype import Workflow, Node, MapNode, DataSink
 from nipype.interfaces import fsl, freesurfer as fs
 import json
+import warnings
+try:
+    from bids.grabbids import BIDSLayout
+except IOError:
+    warnings.warn("Can't find pybbids, so won't be able to pre-process BIDS data")
 
 
 def main(arglist):
@@ -14,24 +19,24 @@ def main(arglist):
 
     # Parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-subject', required=True,
+    parser.add_argument('-subject',
                         help=('Freesurfer subject id. Note that we use the $SUBJECTS_DIR '
                               'environmental variable to find the required data'))
     parser.add_argument('-datadir', required=True, help='Raw MR data path')
     parser.add_argument('-outdir', required=True, help='Output directory path')
-    parser.add_argument('-epis', required=True, nargs='+', type=int,
+    parser.add_argument('-epis', nargs='+', type=int,
                         help='EPI scan numbers')
-    parser.add_argument('-sbref', required=True, type=int,
+    parser.add_argument('-sbref', type=int,
                         help='Single band reference scan number')
-    parser.add_argument('-distortPE', required=True,
+    parser.add_argument('-distortPE', type=int,
                         help=('Distortion scan number with same PE as epis. Should be number if '
                               'dir_structure is prisma, and two letter string (e.g., AP, PA) if '
                               'dir_structure is bids'))
-    parser.add_argument('-distortrevPE', required=True,
+    parser.add_argument('-distortrevPE',type=int,
                         help=('Distortion scan number with reverse PE as epis. Should be number if'
                               ' dir_structure is prisma, and two letter string (e.g., AP, PA) if '
                               'dir_structure is bids'))
-    parser.add_argument('-PEdim', type=str, default='y', 
+    parser.add_argument('-PEdim', type=str, default='y',
                         help='PE dimension (x, y, or z)')
     parser.add_argument("-plugin", type=str, default="MultiProc",
                         help=("Nipype plugin to use for running this. MultiProc (default) is "
@@ -39,8 +44,8 @@ def main(arglist):
                               "your  computer's resources. Linear is slower, but won't do that."
                               "SLURM should be used on NYU HPC prince cluster."))
     parser.add_argument('-working_dir', default=None,
-                        help=("Path to your working directory. By default, this will be within your"
-                              "output directory, but you may want to place it elsewhere. For "
+                        help=("Path to your working directory. By default, this will be within "
+                              "your output directory, but you may want to place it elsewhere. For "
                               "example, on the HPC cluster, you may run out of space if this is in"
                               "your /home directory, so you probably want this in /scratch"))
     parser.add_argument('-dir_structure', default='prisma',
@@ -48,7 +53,10 @@ def main(arglist):
                               " off the prisma scanner ('prisma') or is it BIDS structured "
                               "('BIDS')? This determines how we look for the various scans. If "
                               "your data is BIDS-structured, then datadir should point to the "
-                              "particular session you want to preprocess as well"))
+                              "particular session you want to preprocess as well and you should "
+                              "have your relevant freesurfer in BIDS_PROJECT_ROOT/derivates/"
+                              "freesurfer, with the relevant BIDS subject names (best way to do "
+                              "this is probably using a symlink)"))
     parser.add_argument('-plugin_args', default=None,
                         help=("Any additional arguments to pass to nipype's workflow.run as plugin"
                               "_args. A single entry in the resulting dictionary should be of the"
@@ -60,28 +68,45 @@ def main(arglist):
 
     # Session paths and files
     session = dict()
-    session['subj'] = args['subject']
     session['data'] = args['datadir']
     if args['dir_structure'] == 'prisma':
+        session['subj'] = args['subject']
         session['nii_temp'] = op.join(session['data'], '%02d+*', '*.nii')
-        session['epis'] = [glob(session['nii_temp'] %r)[0] for r in args['epis']]
-        session['sbref'] = glob(session['nii_temp'] %args['sbref'])[0]
-        # this is a bit of a hack. for the bids structure, these two values will be strings and so
-        # we can't set type=int in the argparse arguments above. however, we do want to use %02d
-        # formatting string, so we'll just cast these two as ints here.
-        session['distort_PE'] = glob(session['nii_temp'] %int(args['distortPE']))[0]
-        session['distort_revPE'] = glob(session['nii_temp'] %int(args['distortrevPE']))[0]
+        session['epis'] = [glob(session['nii_temp'] % r)[0] for r in args['epis']]
+        session['sbref'] = glob(session['nii_temp'] % args['sbref'])[0]
+        session['distort_PE'] = glob(session['nii_temp'] % args['distortPE'])[0]
+        session['distort_revPE'] = glob(session['nii_temp'] % args['distortrevPE'])[0]
+        session['PE_dim'] = args['PEdim']
     elif args['dir_structure'] == 'bids':
-        session['nii_temp'] = op.join(session['data'], '%s', '*-%02d_%s.nii')
-        session['nii_fmap_temp'] = op.join(session['data'], '%s', '*-%s_%s.nii')
-        session['epis'] = [glob(session['nii_temp'] % ('func', r, 'bold'))[0] for r in args['epis']]
-        session['sbref'] = glob(session['nii_temp'] % ('func', args['sbref'], 'sbref'))[0]
-        session['distort_PE'] = glob(session['nii_fmap_temp'] % ('fmap', args['distortPE'], 'epi'))[0]
-        session['distort_revPE'] = glob(session['nii_fmap_temp'] % ('fmap', args['distortrevPE'], 'epi'))[0]
+        layout = BIDSLayout(session['data'])
+        subj = layout.get_subjects()
+        if len(subj) != 1:
+            raise Exception("Cannot infer subject name from data directory %s!" % session['data'])
+        else:
+            if 'sub-' not in subj[0]:
+                session['subj'] = "sub-" + subj[0]
+            else:
+                session['subj'] = subj[0]
+        session['epis'] = layout.get('file', extensions='nii', type='bold')
+        session['sbref'] = layout.get('file', extensions='nii', type='sbref')[0]
+        distortion_scans = layout.get('file', extensions='nii', type='epi')
+        distortion_scans = glob(session['nii_temp'] % ('fmap', 'epi'))
+        distortion_PEdirections = {}
+        for scan in distortion_scans:
+            distortion_PEdirections[layout.get_metadata(scan)['PhaseEncodingDirection']] = scan
+        epi_PEdirections = []
+        for scan in session['epis']:
+            epi_PEdirections.append(layout.get_metadata(scan)['PhaseEncodingDirection'])
+        if len(set(epi_PEdirections)) != 1:
+            raise Exception("Cannot find unique phase encoding direction for your functional data"
+                            " in data directory %s!" % session['data'])
+        # we want PEdim to be x, y, or z, but coming from BIDS jsons it will be one of i, j, k
+        session['PEdim'] = {'i': 'x', 'j': 'y', 'k': 'z'}[epi_PEdirections[0]]
+        session['distort_PE'] = distortion_PEdirections[epi_PEdirections[0]]
+        session['distort_revPE'] = distortion_PEdirections["%s-" % epi_PEdirections[0]]
     else:
         raise Exception("Don't know what to do with dir_structure %s!" % args['dir_structure'])
-    session['PE_dim'] = args['PEdim']
-                          
+
     # Preproc output directory
     session['out'] = args['outdir']
     if not op.exists(session['out']):
