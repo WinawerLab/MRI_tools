@@ -251,7 +251,7 @@ def copy_fmap(data_dir, output_dir, distortPE, distortrevPE, PEdim='j', session_
         # the reversed distortion scan should have the dash after it.
         if i == 1:
             phase_dir += '-'
-        intended_for = glob.glob(os.path.join(os.path.dirname(subj_dir), 'func', '*.nii'))
+        intended_for = sorted(glob.glob(os.path.join(os.path.dirname(subj_dir), 'func', '*.nii')))
         fmap_dict = {'PhaseEncodingDirection': phase_dir, 'TotalReadoutTime': 3,
                      'IntendedFor': intended_for}
         with open(os.path.join(subj_dir, base_filename % (direction, "json")), 'w') as f:
@@ -321,6 +321,9 @@ def json_check(dir_to_check):
     all those files and put it in a json file without the run indicator on directory up
     """
     json_files = dict((f, None) for f in glob.glob(os.path.join(dir_to_check, "*.json")))
+    if not json_files:
+        # then there are no json files to check
+        return
     for jf in json_files.iterkeys():
         with open(jf) as f:
             json_files[jf] = json.load(f)
@@ -329,8 +332,17 @@ def json_check(dir_to_check):
     for k in all_keys:
         try:
             all_vals = [jd[k] for jd in json_files.itervalues()]
-            most_common_val = Counter(all_vals).most_common()[0][0]
-            shared_dict[k] = most_common_val
+            try:
+                counts = Counter(all_vals)
+            except TypeError:
+                # if all_vals is a list or other unhashable type, the above will fail. typically,
+                # casting it as a tuple will then work
+                counts = Counter(map(tuple, all_vals))
+            if all([i==1 for i in counts.values()]):
+                # if each entry only shows up once, we don't want to just pick one, we would rather
+                # not have that in the shared dict
+                continue
+            shared_dict[k] = counts.most_common()[0][0]
         except KeyError:
             pass
     for jf, jd in json_files.iteritems():
