@@ -90,7 +90,6 @@ def main(arglist):
         session['epis'] = layout.get('file', extensions='nii', type='bold')
         session['sbref'] = layout.get('file', extensions='nii', type='sbref')[0]
         distortion_scans = layout.get('file', extensions='nii', type='epi')
-        distortion_scans = glob(session['nii_temp'] % ('fmap', 'epi'))
         distortion_PEdirections = {}
         for scan in distortion_scans:
             distortion_PEdirections[layout.get_metadata(scan)['PhaseEncodingDirection']] = scan
@@ -101,7 +100,7 @@ def main(arglist):
             raise Exception("Cannot find unique phase encoding direction for your functional data"
                             " in data directory %s!" % session['data'])
         # we want PEdim to be x, y, or z, but coming from BIDS jsons it will be one of i, j, k
-        session['PEdim'] = {'i': 'x', 'j': 'y', 'k': 'z'}[epi_PEdirections[0]]
+        session['PE_dim'] = {'i': 'x', 'j': 'y', 'k': 'z'}[epi_PEdirections[0]]
         session['distort_PE'] = distortion_PEdirections[epi_PEdirections[0]]
         session['distort_revPE'] = distortion_PEdirections["%s-" % epi_PEdirections[0]]
     else:
