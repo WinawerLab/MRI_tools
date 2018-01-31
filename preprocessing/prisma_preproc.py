@@ -87,7 +87,10 @@ def main(arglist):
                 session['subj'] = "sub-" + subj[0]
             else:
                 session['subj'] = subj[0]
-        session['epis'] = layout.get('file', extensions='nii', type='bold')
+        session['epis'] = sorted(layout.get('file', extensions='nii', type='bold'))
+        if args['epis'] is not None:
+            # then we assume that args['epis'] gives an index into these
+            session['epis'] = np.array(session['epis'])[args['epis']]
         session['sbref'] = layout.get('file', extensions='nii', type='sbref')[0]
         distortion_scans = layout.get('file', extensions='nii', type='epi')
         distortion_scans = glob(session['nii_temp'] % ('fmap', 'epi'))
