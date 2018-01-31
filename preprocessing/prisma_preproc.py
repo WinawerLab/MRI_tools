@@ -269,7 +269,7 @@ def create_preproc_workflow(session):
 
     #---Copy important files to main directory---
     substitutions = [('_merge_epis%d/timeseries_corrected.nii.gz' % r,
-                      'timeseries_corrected_run%02d.nii.gz' % (r+1))
+                      'timeseries_corrected_run-%02d.nii.gz' % (r+1))
                      for r in np.arange(len(session['epis']))]
     ds = Node(DataSink(base_directory=os.path.abspath(session['out']),
                        substitutions=substitutions),
