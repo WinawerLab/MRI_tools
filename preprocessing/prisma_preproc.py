@@ -73,6 +73,8 @@ def main(arglist):
         session['subj'] = args['subject']
         session['nii_temp'] = op.join(session['data'], '%02d+*', '*.nii')
         session['epis'] = [glob(session['nii_temp'] % r)[0] for r in args['epis']]
+        # we want these to be 1-indexed
+        session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1)
         session['sbref'] = glob(session['nii_temp'] % args['sbref'])[0]
         session['distort_PE'] = glob(session['nii_temp'] % args['distortPE'])[0]
         session['distort_revPE'] = glob(session['nii_temp'] % args['distortrevPE'])[0]
@@ -87,10 +89,14 @@ def main(arglist):
                 session['subj'] = "sub-" + subj[0]
             else:
                 session['subj'] = subj[0]
-        session['epis'] = sorted(layout.get('file', extensions='nii', type='bold'))
         if args['epis'] is not None:
-            # then we assume that args['epis'] gives an index into these
-            session['epis'] = np.array(session['epis'])[args['epis']]
+            # then we assume that args['epis'] gives us the run numbers we want
+            session['epis'] = layout.get('file', extensions='nii', type='bold', run=args['epis'])
+            session['epi_output_nums'] = args['epis']
+        else:
+            session['epis'] = layout.get('file', extensions='nii', type='bold')
+            # we want these to be 1-indexed
+            session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1)
         session['sbref'] = layout.get('file', extensions='nii', type='sbref')[0]
         distortion_scans = layout.get('file', extensions='nii', type='epi')
         distortion_PEdirections = {}
@@ -270,9 +276,9 @@ def create_preproc_workflow(session):
 
 
     #---Copy important files to main directory---
-    substitutions = [('_merge_epis%d/timeseries_corrected.nii.gz' % r,
-                      'timeseries_corrected_run-%02d.nii.gz' % (r+1))
-                     for r in np.arange(len(session['epis']))]
+    substitutions = [('_merge_epis%d/timeseries_corrected.nii.gz' % i,
+                      'timeseries_corrected_run-%02d.nii.gz' % r)
+                     for i, r in enumerate(session['epi_output_nums'])]
     ds = Node(DataSink(base_directory=os.path.abspath(session['out']),
                        substitutions=substitutions),
               name='outfiles')
