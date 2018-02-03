@@ -96,7 +96,8 @@ def main(args):
         # okay, now project to the surface
         if args.surface:
             note('   - Projecting to surface...')
-            (ldat, rdat) = sub.image_to_cortex(newimg, args.layer, method=args.method)
+            (ldat, rdat) = sub.image_to_cortex(newimg, args.layer,
+                                               method=args.method, dtype=np.float)
             # we need to fix the dimensions...
             for (d,h) in zip([ldat,rdat], ['lh','rh']):
                 im = nib.freesurfer.mghformat.MGHImage(
