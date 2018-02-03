@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-
+####################################################################################################
 # Script to reorient volumes into anatomical orientation and to create surface time-series.
 # This script is made for use with a registration file (in FreeSurfer's tkreg format) and
 # a series of unwarped time-series volumes: i.e., the output of Serra's preprocessing
@@ -61,6 +61,8 @@ def main(args):
     else:
         def note(*args):
             return False
+    try: args.layer = float(args.layer)
+    except: pass
     # Read in the registration file
     args.reg = args.reg[0]
     if not os.path.isfile(args.reg):
