@@ -86,7 +86,7 @@ def main(args):
     for epi in epis:
         note('Processing EPI %s...' % epi)
         # import the epi file..
-        img = ny.load(epi)
+        img = ny.load(epi, to='image')
         # edit the header...
         note('   - Correcting volume orientation...')
         new_affine = np.dot(displm, np.dot(affinv, ny.freesurfer.tkr_vox2ras(img)))
