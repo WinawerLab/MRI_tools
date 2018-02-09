@@ -95,8 +95,8 @@ def main(arglist):
             session['epi_output_nums'] = args['epis']
         else:
             session['epis'] = layout.get('file', extensions='nii', type='bold')
-            # we want these to be 1-indexed
-            session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1)
+            # we want these to be 1-indexed. and it must be a list so it's json-serializable
+            session['epi_output_nums'] = list(np.arange(1, len(session['epis']) + 1))
         session['sbref'] = layout.get('file', extensions='nii', type='sbref')[0]
         distortion_scans = layout.get('file', extensions='nii', type='epi')
         distortion_PEdirections = {}
