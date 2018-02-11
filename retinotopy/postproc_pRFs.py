@@ -68,7 +68,7 @@ def main(args):
                      for suff in ['xcrds','ycrds','sigma','vexpl']]
         # fix polar angle/eccen
         note('  - Creating polar angle/eccentricity images...')
-        ang = np.arctan2(y.get_data(), x.get_data())
+        ang = np.arctan2(-y.get_data() if args.invert_y else y.get_data(), x.get_data())
         ang = np.mod((90.0 - 180.0/np.pi * ang) + 180, 360) - 180
         a = nib.Nifti1Image(ang, x.affine, x.header)
         e = nib.Nifti1Image(np.sqrt(y.get_data()**2 + x.get_data()**2), x.affine, x.header)
