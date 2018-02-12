@@ -77,14 +77,31 @@ def main(args):
         # surfaces...
         if not dosurf: continue
         note('  - Projecting to surface...')
-        to_output = {'xcrds':x, 'ycrds':y, 'angle':a, 'eccen':e, 'sigma': s, 'vexpl': v}
+        to_output = {'xcrds':x, 'ycrds':y, 'sigma': s, 'vexpl': v}
+        xy = ([0,0],[0,0])
         for (dname,im) in six.iteritems(to_output):
             (ldat, rdat) = sub.image_to_cortex(im, args.layer,
                                                method=args.method, dtype=np.float32,
                                                weight=v)
+            if dname == 'xcrds':
+                xy[0][0] = ldat
+                xy[1][0] = rdat
+            elif dname == 'ycrds':
+                xy[0][1] = ldat
+                xy[1][1] = rdat
             # we need to fix the dimensions...
             for (d,h) in zip([ldat,rdat], ['lh','rh']):
                 ny.save('%s.%s-%s.mgz' % (h, ds, dname), d)
+        # Special handling for the angle and eccen (avoids need for circular averaging)
+        xy = (np.asarray(xy[0]), np.asarray(xy[1]))
+        (lecc,recc) = [np.sqrt(np.sum(u**2, axis=0)) for u in xy]
+        (lang,rang) = [np.arctan2(-u[1] if args.invert_y else u[1], u[0])
+                       for u in (xy[0] * ny.util.zinv(lecc), xy[1] * ny.util.zinv(recc))]
+        (lang,rang) = [np.mod((90 - 180/np.pi * aa) + 180, 360) - 180 for aa in (lang,rang)]
+        # export these...
+        for (h,nm,dat) in [('lh','eccen',lecc), ('lh','angle',lang),
+                           ('rh','eccen',recc), ('rh','angle',rang)]:
+            ny.save('%s.%s-%s.mgz' % (h, ds, nm), dat)
     # That's it!
     return 0
 
