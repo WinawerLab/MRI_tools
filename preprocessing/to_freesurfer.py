@@ -17,9 +17,9 @@ def main(args):
                               ' file, in FreeSurfer\'s tkreg format, to apply to the EPIs.'))
     parser.add_argument('epis', metavar='EPI', type=str, nargs='+',
                         help='The EPI files to be converted to anatomical orientation')
-    parser.add_argument('-t', '--tag', required=False, default='_anat', dest='tag', nargs=1,
-                        help=('A tag to append to the output filenames; if given as - then'
-                              ' overwrites original files. By default, this is "_anat".'))
+    parser.add_argument('-t', '--tag', required=False, default='-', dest='tag', nargs=1,
+                        help=('A tag to append to the output filenames; if given as - or'
+                              ' omitted, overwrites original files.'))
     parser.add_argument('-s', '--surf', required=False, default=False,
                         dest='surface', action='store_true',
                         help=('If provided, instructs the script to also produce files of the '
@@ -48,7 +48,7 @@ def main(args):
     # Check some of the arguments...
     epis = args.epis
     if len(epis) < 1: raise RuntimeError('No EPIs given')
-    tag = args.tag
+    tag = args.tag[0]
     if tag == '-': tag = ''
     dosurf = args.surface
     outdir = args.outdir
@@ -92,8 +92,14 @@ def main(args):
         new_affine = np.dot(displm, np.dot(affinv, ny.freesurfer.tkr_vox2ras(img)))
         newimg = nib.Nifti1Image(img.dataobj, new_affine, img.header)
         (epi_dir,epi_flnm) = os.path.split(epi)
-        srf_flnm = (epi_flnm[:-3] if epi_flnm[:-4] in ['.mgz', '.mgh', '.nii'] else epi_flnm[:-6])
-        srf_flnm += 'mgz'
+        if epi_flnm[:-4] in ['.mgz', '.mgh', '.nii']:
+            pre = epi_flnm[:-4]
+            suf = epi_flnm[-4:]
+        else:
+            pre = epi_flnm[:-7]
+            suf = epi_flnm[-7:]
+        srf_flnm = pre + tag + '.mgz'
+        epi_flnm = pre + tag + suf
         newimg.to_filename(os.path.join(args.outdir, epi_flnm))
         # okay, now project to the surface
         if args.surface:
