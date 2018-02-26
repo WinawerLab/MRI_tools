@@ -108,9 +108,15 @@ def main(args):
                                                method=args.method, dtype=np.float32)
             # we need to fix the dimensions...
             for (d,h) in zip([ldat,rdat], ['lh','rh']):
-                im = nib.freesurfer.mghformat.MGHImage(
-                    np.transpose(reduce(np.expand_dims, [-1,-1], d), (0,2,3,1)),
-                    np.eye(4))
+                if d.shape[-1] == 1:
+                    # then this should properly be a 3d MGH image, not a 4d one.
+                    im = nib.freesurfer.mghformat.MGHImage(
+                        np.transpose(reduce(np.expand_dims, [-1], d), (0,2,1)),
+                        np.eye(4))
+                else:
+                    im = nib.freesurfer.mghformat.MGHImage(
+                        np.transpose(reduce(np.expand_dims, [-1,-1], d), (0,2,3,1)),
+                        np.eye(4))
                 im.to_filename(os.path.join(args.outdir, h + '.' + srf_flnm))
     # That's it!
     return 0
