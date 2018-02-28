@@ -14,6 +14,21 @@ except IOError:
     warnings.warn("Can't find pybbids, so won't be able to pre-process BIDS data")
 
 
+def _get_BIDS_name(layout, value, datadir):
+    if value == 'sub':
+        found_value = layout.get_subjects()
+    elif value == 'ses':
+        found_value = layout.get_sessions()
+    elif value == 'task':
+        found_value = layout.get_tasks()
+    if len(found_value) != 1:
+        raise Exception("Cannot infer %s name from data directory %s!" % (value, datadir))
+    found_value = found_value[0]
+    if "%s-" % value not in found_value:
+        found_value = "%s-%s" % (value, found_value)
+    return found_value
+
+
 def main(arglist):
     """Preprocess NYU CBI Prisma data"""
 
@@ -21,9 +36,12 @@ def main(arglist):
     parser = argparse.ArgumentParser()
     parser.add_argument('-subject',
                         help=('Freesurfer subject id. Note that we use the $SUBJECTS_DIR '
-                              'environmental variable to find the required data'))
+                              'environmental variable to find the required data. Must be set if '
+                              'dir_structure==\'prisma\'. if dir_structure==\'bids\', will use '
+                              'the inferred BIDS subject id for the Freesurfer subject id *unless*'
+                              ' this is set, in which case we will use this instead'))
     parser.add_argument('-datadir', required=True, help='Raw MR data path')
-    parser.add_argument('-outdir', required=True, help='Output directory path')
+    parser.add_argument('-outdir', help='Output directory path. ignored if dir_structure==\'bids\'')
     parser.add_argument('-epis', nargs='+', type=int,
                         help='EPI scan numbers')
     parser.add_argument('-sbref', type=int,
@@ -51,12 +69,21 @@ def main(arglist):
     parser.add_argument('-dir_structure', default='prisma',
                         help=("{prisma, bids}. Is your data directory structured like it just came"
                               " off the prisma scanner ('prisma') or is it BIDS structured "
-                              "('BIDS')? This determines how we look for the various scans. If "
+                              "('bids')? This determines how we look for the various scans. If "
                               "your data is BIDS-structured, then datadir should point to the "
-                              "particular session you want to preprocess as well and you should "
-                              "have your relevant freesurfer in BIDS_PROJECT_ROOT/derivates/"
-                              "freesurfer, with the relevant BIDS subject names (best way to do "
-                              "this is probably using a symlink)"))
+                              "particular session you want to preprocess. Outputs will then be: "
+                              "{BIDS_dir}/derivatives/{bids_derivative_name}/{BIDS_subject_name}/"
+                              "{BIDS_session_name}/{BIDS_subject_name}_{BIDS_session_name}_"
+                              "{BIDS_task_name}_{run}_{bids_suffix}.nii.gz, where BIDS_subject_"
+                              "name, BIDS_session_name, and BIDS_task_name are all inferred from "
+                              "input data and BIDS_dir is two directories above datadir (since "
+                              "datadir corresponds to one BIDS session)."))
+    parser.add_argument('-bids_derivative_name', default='preprocessed',
+                        help=("the name of the derivatives directory in which to place the "
+                              "outputs. ignored if dir_structure=='prisma'"))
+    parser.add_argument('-bids_suffix', default='preproc',
+                        help=("the suffix to place at the end of the output filenames. ignored if"
+                              " dir_structure=='prisma'"))
     parser.add_argument('-plugin_args', default=None,
                         help=("Any additional arguments to pass to nipype's workflow.run as plugin"
                               "_args. A single entry in the resulting dictionary should be of the"
@@ -70,25 +97,24 @@ def main(arglist):
     session = dict()
     session['data'] = args['datadir']
     if args['dir_structure'] == 'prisma':
-        session['subj'] = args['subject']
+        session['Freesurfer_subject_name'] = args['subject']
         session['nii_temp'] = op.join(session['data'], '%02d+*', '*.nii')
         session['epis'] = [glob(session['nii_temp'] % r)[0] for r in args['epis']]
-        # we want these to be 1-indexed
-        session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1)
+        # we want these to be 1-indexed. and it must be a list so it's json-serializable
+        session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1).tolist()
         session['sbref'] = glob(session['nii_temp'] % args['sbref'])[0]
         session['distort_PE'] = glob(session['nii_temp'] % args['distortPE'])[0]
         session['distort_revPE'] = glob(session['nii_temp'] % args['distortrevPE'])[0]
         session['PE_dim'] = args['PEdim']
+        session['out'] = args['outdir']
+        session['out_name'] = "timeseries_corrected_run-%02d.nii.gz"
     elif args['dir_structure'] == 'bids':
         layout = BIDSLayout(session['data'])
-        subj = layout.get_subjects()
-        if len(subj) != 1:
-            raise Exception("Cannot infer subject name from data directory %s!" % session['data'])
+        session['BIDS_subject_name'] = _get_BIDS_name(layout, 'sub', session['data'])
+        if args['subject'] is None:
+            session['Freesurfer_subject_name'] = session['BIDS_subject_name']
         else:
-            if 'sub-' not in subj[0]:
-                session['subj'] = "sub-" + subj[0]
-            else:
-                session['subj'] = subj[0]
+            session['Freesurfer_subject_name'] = args['subject']
         if args['epis'] is not None:
             # then we assume that args['epis'] gives us the run numbers we want
             session['epis'] = layout.get('file', extensions='nii', type='bold', run=args['epis'])
@@ -96,7 +122,7 @@ def main(arglist):
         else:
             session['epis'] = layout.get('file', extensions='nii', type='bold')
             # we want these to be 1-indexed. and it must be a list so it's json-serializable
-            session['epi_output_nums'] = list(np.arange(1, len(session['epis']) + 1))
+            session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1).tolist()
         session['sbref'] = layout.get('file', extensions='nii', type='sbref')[0]
         distortion_scans = layout.get('file', extensions='nii', type='epi')
         distortion_PEdirections = {}
@@ -112,11 +138,20 @@ def main(arglist):
         session['PE_dim'] = {'i': 'x', 'j': 'y', 'k': 'z'}[epi_PEdirections[0]]
         session['distort_PE'] = distortion_PEdirections[epi_PEdirections[0]]
         session['distort_revPE'] = distortion_PEdirections["%s-" % epi_PEdirections[0]]
+        session['BIDS_session_name'] = _get_BIDS_name(layout, 'ses', session['data'])
+        session['BIDS_task_name'] = _get_BIDS_name(layout, 'task', session['data'])
+        session['bids_derivative_name'] = args['bids_derivative_name']
+        session['bids_suffix'] = args['bids_suffix']
+        out_dir = op.abspath(op.join(session['data'], "../..",
+                                    ("derivatives/{bids_derivative_name}/{BIDS_subject_name}/"
+                                     "{BIDS_session_name}/")))
+        session['out'] = out_dir.format(**session)
+        out_name = ("{BIDS_subject_name}_{BIDS_session_name}_{BIDS_task_name}_run-%02d_"
+                    "{bids_suffix}.nii.gz")
+        session['out_name'] = out_name.format(**session)
     else:
         raise Exception("Don't know what to do with dir_structure %s!" % args['dir_structure'])
 
-    # Preproc output directory
-    session['out'] = args['outdir']
     if not op.exists(session['out']):
         os.makedirs(session['out'])
 
@@ -225,7 +260,7 @@ def create_preproc_workflow(session):
     wf.connect(unwarp_dist, 'out_corrected', mean_unwarped_dist, 'in_file')
 
     # Register mean unwarped distortion scan to anatomy using bbregister
-    reg2anat = Node(fs.BBRegister(subject_id=session['subj'],
+    reg2anat = Node(fs.BBRegister(subject_id=session['Freesurfer_subject_name'],
                                   contrast_type='t2',
                                   init='fsl',
                                   out_reg_file='distort2anat_tkreg.dat',
@@ -277,7 +312,7 @@ def create_preproc_workflow(session):
 
     #---Copy important files to main directory---
     substitutions = [('_merge_epis%d/timeseries_corrected.nii.gz' % i,
-                      'timeseries_corrected_run-%02d.nii.gz' % r)
+                      session['out_name'] % r)
                      for i, r in enumerate(session['epi_output_nums'])]
     ds = Node(DataSink(base_directory=os.path.abspath(session['out']),
                        substitutions=substitutions),
