@@ -276,6 +276,8 @@ def copy_anat(data_dir, output_dir, anat_nums, modality_label, session_label=Non
     if not hasattr(anat_nums, '__iter__'):
         anat_nums = [anat_nums]
         run_label = None
+    elif len(anat_nums) == 1:
+        run_label = None
     elif len(anat_nums) > 1:
         run_label = range(1, len(anat_nums)+1)
     anat_files = [glob.glob(n % a) for n in nifti_str for a in anat_nums]
