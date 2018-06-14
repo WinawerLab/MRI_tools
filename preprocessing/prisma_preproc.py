@@ -52,7 +52,8 @@ def main(arglist):
     parser.add_argument('-epis', nargs='+', type=int,
                         help='EPI scan numbers')
     parser.add_argument('-sbref', type=int,
-                        help='Single band reference scan number')
+                        help=('Single band reference scan number. Only required if dir_structure is'
+                              ' prisma (if bids, we determine it from filenames)'))
     parser.add_argument('-distortPE', type=int,
                         help=('Distortion scan number with same PE as epis. Only required if '
                               'dir_structure is prisma (if bids, we determine it from the '
