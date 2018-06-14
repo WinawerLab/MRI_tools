@@ -47,13 +47,13 @@ def main(arglist):
     parser.add_argument('-sbref', type=int,
                         help='Single band reference scan number')
     parser.add_argument('-distortPE', type=int,
-                        help=('Distortion scan number with same PE as epis. Should be number if '
-                              'dir_structure is prisma, and two letter string (e.g., AP, PA) if '
-                              'dir_structure is bids'))
-    parser.add_argument('-distortrevPE',type=int,
-                        help=('Distortion scan number with reverse PE as epis. Should be number if'
-                              ' dir_structure is prisma, and two letter string (e.g., AP, PA) if '
-                              'dir_structure is bids'))
+                        help=('Distortion scan number with same PE as epis. Only required if '
+                              'dir_structure is prisma (if bids, we determine it from the '
+                              'filenames).'))
+    parser.add_argument('-distortrevPE', type=int,
+                        help=('Distortion scan number with reverse PE as epis. Only required if '
+                              'dir_structure is prisma (if bids, we determine it from the '
+                              'filenames).'))
     parser.add_argument('-PEdim', type=str, default='y',
                         help='PE dimension (x, y, or z)')
     parser.add_argument("-plugin", type=str, default="MultiProc",
@@ -117,14 +117,15 @@ def main(arglist):
             session['Freesurfer_subject_name'] = args['subject']
         if args['epis'] is not None:
             # then we assume that args['epis'] gives us the run numbers we want
-            session['epis'] = layout.get('file', extensions='nii', type='bold', run=args['epis'])
+            session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
+                                         run=args['epis'])
             session['epi_output_nums'] = args['epis']
         else:
-            session['epis'] = layout.get('file', extensions='nii', type='bold')
+            session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold')
             # we want these to be 1-indexed. and it must be a list so it's json-serializable
             session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1).tolist()
-        session['sbref'] = layout.get('file', extensions='nii', type='sbref')[0]
-        distortion_scans = layout.get('file', extensions='nii', type='epi')
+        session['sbref'] = layout.get('file', extensions=['nii', 'nii.gz'], type='sbref')[0]
+        distortion_scans = layout.get('file', extensions=['nii', 'nii.gz'], type='epi')
         distortion_PEdirections = {}
         for scan in distortion_scans:
             distortion_PEdirections[layout.get_metadata(scan)['PhaseEncodingDirection']] = scan
