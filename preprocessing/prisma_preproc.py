@@ -25,7 +25,7 @@ def _get_BIDS_name(layout, value, datadir, target=None):
         if len(found_value) == 0:
             raise Exception("Found no %s name from data directory %s!" % (value, datadir))
         if len(found_value) > 1:
-            if target is not None and target is in found_value:
+            if target is not None and target in found_value:
                 found_value = [target]
             else:
                 raise Exception("Found more than 1 %s name from data directory %s! %s" %
