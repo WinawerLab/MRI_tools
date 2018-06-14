@@ -14,7 +14,7 @@ except IOError:
     warnings.warn("Can't find pybbids, so won't be able to pre-process BIDS data")
 
 
-def _get_BIDS_name(layout, value, datadir):
+def _get_BIDS_name(layout, value, datadir, target=None):
     if value == 'sub':
         found_value = layout.get_subjects()
     elif value == 'ses':
@@ -22,7 +22,14 @@ def _get_BIDS_name(layout, value, datadir):
     elif value == 'task':
         found_value = layout.get_tasks()
     if len(found_value) != 1:
-        raise Exception("Cannot infer %s name from data directory %s!" % (value, datadir))
+        if len(found_value) == 0:
+            raise Exception("Found no %s name from data directory %s!" % (value, datadir))
+        if len(found_value) > 1:
+            if target is not None and target is in found_value:
+                found_value = [target]
+            else:
+                raise Exception("Found more than 1 %s name from data directory %s! %s" %
+                                (value, datadir, found_value))
     found_value = found_value[0]
     if "%s-" % value not in found_value:
         found_value = "%s-%s" % (value, found_value)
@@ -55,7 +62,8 @@ def main(arglist):
                               'dir_structure is prisma (if bids, we determine it from the '
                               'filenames).'))
     parser.add_argument('-PEdim', type=str, default='y',
-                        help='PE dimension (x, y, or z)')
+                        help=('PE dimension (x, y, or z). Only necessary if dir_structure is '
+                              'prisma (if bids, we determine it from metadata)'))
     parser.add_argument("-plugin", type=str, default="MultiProc",
                         help=("Nipype plugin to use for running this. MultiProc (default) is "
                               "normally fine for when running locally, though it may use up all "
@@ -77,13 +85,20 @@ def main(arglist):
                               "{BIDS_task_name}_{run}_{bids_suffix}.nii.gz, where BIDS_subject_"
                               "name, BIDS_session_name, and BIDS_task_name are all inferred from "
                               "input data and BIDS_dir is two directories above datadir (since "
-                              "datadir corresponds to one BIDS session)."))
+                              "datadir corresponds to one BIDS session). We also preprocess tasks"
+                              " separately; if you have more than one task, use the -bids_task flag"
+                              " to specify which one you want to preprocess"))
     parser.add_argument('-bids_derivative_name', default='preprocessed',
                         help=("the name of the derivatives directory in which to place the "
                               "outputs. ignored if dir_structure=='prisma'"))
     parser.add_argument('-bids_suffix', default='preproc',
                         help=("the suffix to place at the end of the output filenames. ignored if"
                               " dir_structure=='prisma'"))
+    parser.add_argument('-bids_task', default=None,
+                        help=("Which bids task to preprocess. Only required if you have more than"
+                              " one task in your session directory (we only preprocess one task at"
+                              " a time). If you only have one task, we can grab its name from the"
+                              " filenames."))
     parser.add_argument('-plugin_args', default=None,
                         help=("Any additional arguments to pass to nipype's workflow.run as plugin"
                               "_args. A single entry in the resulting dictionary should be of the"
@@ -111,19 +126,36 @@ def main(arglist):
     elif args['dir_structure'] == 'bids':
         layout = BIDSLayout(session['data'])
         session['BIDS_subject_name'] = _get_BIDS_name(layout, 'sub', session['data'])
+        session['BIDS_session_name'] = _get_BIDS_name(layout, 'ses', session['data'])
+        session['BIDS_task_name'] = _get_BIDS_name(layout, 'task', session['data'],
+                                                   args['bids_task'])
         if args['subject'] is None:
             session['Freesurfer_subject_name'] = session['BIDS_subject_name']
         else:
             session['Freesurfer_subject_name'] = args['subject']
         if args['epis'] is not None:
             # then we assume that args['epis'] gives us the run numbers we want
+            for i in args['epis']:
+                if len(layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
+                                  run=i, task=session["BIDS_task_name"])) > 1:
+                    raise Exception("Found multiple bold nifti files with run %s! We require that "
+                                    "there only be 1." % i)
             session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
-                                         run=args['epis'])
+                                         run=args['epis'], task=session["BIDS_task_name"])
             session['epi_output_nums'] = args['epis']
         else:
-            session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold')
+            test_files = layout.get('tuple', extensions=['nii', 'nii.gz'], type='bold',
+                                    task=session["BIDS_task_name"])
+            for i in test_files:
+                if len(layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
+                                  run=i.run, task=session["BIDS_task_name"])) > 1:
+                    raise Exception("Found multiple bold nifti files with run %s! We require that "
+                                    "there only be 1." % i.run)
+            session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
+                                         task=session["BIDS_task_name"])
             # we want these to be 1-indexed. and it must be a list so it's json-serializable
             session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1).tolist()
+
         session['sbref'] = layout.get('file', extensions=['nii', 'nii.gz'], type='sbref')[0]
         distortion_scans = layout.get('file', extensions=['nii', 'nii.gz'], type='epi')
         distortion_PEdirections = {}
@@ -139,8 +171,6 @@ def main(arglist):
         session['PE_dim'] = {'i': 'x', 'j': 'y', 'k': 'z'}[epi_PEdirections[0]]
         session['distort_PE'] = distortion_PEdirections[epi_PEdirections[0]]
         session['distort_revPE'] = distortion_PEdirections["%s-" % epi_PEdirections[0]]
-        session['BIDS_session_name'] = _get_BIDS_name(layout, 'ses', session['data'])
-        session['BIDS_task_name'] = _get_BIDS_name(layout, 'task', session['data'])
         session['bids_derivative_name'] = args['bids_derivative_name']
         session['bids_suffix'] = args['bids_suffix']
         out_dir = op.abspath(op.join(session['data'], "../..",
