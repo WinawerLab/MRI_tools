@@ -109,6 +109,14 @@ def main(arglist):
                               "http://nipype.readthedocs.io/en/latest/users/plugins.html. "))
     args = vars(parser.parse_args(arglist))
 
+    try:
+        subj_dir = os.environ['SUBJECTS_DIR']
+        if not os.path.isdir(subj_dir):
+            raise Exception("Unable to find your Freesurfer SUBJECTS_DIR! Is it on an external "
+                            "drive that you have not mounted?")
+    except KeyError:
+        raise Exception("You do not have your Freesurfer SUBJECTS_DIR environmental variable set!")
+
     # Session paths and files
     session = dict()
     session['data'] = args['datadir']
@@ -187,6 +195,11 @@ def main(arglist):
         session['out_name'] = out_name.format(**session)
     else:
         raise Exception("Don't know what to do with dir_structure %s!" % args['dir_structure'])
+
+    if not os.path.isdir(os.path.join(subj_dir, session['Freesurfer_subject_name'])):
+        raise Exception("Unable to find Freesurfer subject dir for subject %s. Maybe you should "
+                        "use the -subject flag to specify an alternate name?" %
+                        (session['Freesurfer_subject_name']))
 
     if not op.exists(session['out']):
         os.makedirs(session['out'])
