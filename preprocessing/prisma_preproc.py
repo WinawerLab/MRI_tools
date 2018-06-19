@@ -131,7 +131,8 @@ def main(arglist):
         session['BIDS_task_name'] = _get_BIDS_name(layout, 'task', session['data'],
                                                    args['bids_task'])
         if args['subject'] is None:
-            session['Freesurfer_subject_name'] = session['BIDS_subject_name']
+            # we do NOT want "sub-" in the Freesurfer subject name
+            session['Freesurfer_subject_name'] = session['BIDS_subject_name'].replace('sub-', '')
         else:
             session['Freesurfer_subject_name'] = args['subject']
         if args['epis'] is not None:
