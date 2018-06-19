@@ -109,6 +109,14 @@ def main(arglist):
                               "http://nipype.readthedocs.io/en/latest/users/plugins.html. "))
     args = vars(parser.parse_args(arglist))
 
+    try:
+        subj_dir = os.environ['SUBJECTS_DIR']
+        if not os.path.isdir(subj_dir):
+            raise Exception("Unable to find your Freesurfer SUBJECTS_DIR! Is it on an external "
+                            "drive that you have not mounted?")
+    except KeyError:
+        raise Exception("You do not have your Freesurfer SUBJECTS_DIR environmental variable set!")
+
     # Session paths and files
     session = dict()
     session['data'] = args['datadir']
@@ -139,25 +147,29 @@ def main(arglist):
             # then we assume that args['epis'] gives us the run numbers we want
             for i in args['epis']:
                 if len(layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
-                                  run=i, task=session["BIDS_task_name"])) > 1:
+                                  run=i, task=session["BIDS_task_name"].replace('task-'))) > 1:
                     raise Exception("Found multiple bold nifti files with run %s! We require that "
                                     "there only be 1." % i)
             session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
-                                         run=args['epis'], task=session["BIDS_task_name"])
+                                         run=args['epis'],
+                                         task=session["BIDS_task_name"].replace('task-'))
             session['epi_output_nums'] = args['epis']
         else:
             test_files = layout.get('tuple', extensions=['nii', 'nii.gz'], type='bold',
-                                    task=session["BIDS_task_name"])
+                                    task=session["BIDS_task_name"].replace('task-', ''))
             for i in test_files:
                 if len(layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
-                                  run=i.run, task=session["BIDS_task_name"])) > 1:
+                                  run=i.run,
+                                  task=session["BIDS_task_name"].replace('task-', ''))) > 1:
                     raise Exception("Found multiple bold nifti files with run %s! We require that "
                                     "there only be 1." % i.run)
             session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
-                                         task=session["BIDS_task_name"])
+                                         task=session["BIDS_task_name"].replace('task-', ''))
             # we want these to be 1-indexed. and it must be a list so it's json-serializable
             session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1).tolist()
 
+        if len(session['epis']) == 0:
+            raise Exception("Unable to find any epis!")
         session['sbref'] = layout.get('file', extensions=['nii', 'nii.gz'], type='sbref')[0]
         distortion_scans = layout.get('file', extensions=['nii', 'nii.gz'], type='epi')
         distortion_PEdirections = {}
@@ -184,6 +196,11 @@ def main(arglist):
         session['out_name'] = out_name.format(**session)
     else:
         raise Exception("Don't know what to do with dir_structure %s!" % args['dir_structure'])
+
+    if not os.path.isdir(os.path.join(subj_dir, session['Freesurfer_subject_name'])):
+        raise Exception("Unable to find Freesurfer subject dir for subject %s. Maybe you should "
+                        "use the -subject flag to specify an alternate name?" %
+                        (session['Freesurfer_subject_name']))
 
     if not op.exists(session['out']):
         os.makedirs(session['out'])
