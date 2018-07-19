@@ -3,16 +3,14 @@ Matlab and Python tools for MRI analyses
 
 # Requirements
 
+Python 3 (at least 3.6, but probably others) is required.
+
 Python requirements are listed in the requirements.txt file,
 additionally [pydeface](https://github.com/poldracklab/pydeface)
 version 2.0 is required to deface anatomical data (in
 `prisma_to_BIDS.py`; if either pydeface or FSL is unavailable, we will
 simply copy over the anatomical data), which also requires FSL, and
 the preprocessing script requires FSL and Freesurfer.
-
-Additionally, if you want to use the `prisma_preproc.py` to preprocess
-BIDS-formatted data, [pybids](https://github.com/INCF/pybids) is
-required (and can be installed from pip).
 
 # How to use
 
