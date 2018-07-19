@@ -16,23 +16,27 @@ except IOError:
 
 def _get_BIDS_name(layout, value, datadir, target=None):
     if value == 'sub':
-        found_value = layout.get_subjects()
+        found_value_tmp = layout.get_subjects()
     elif value == 'ses':
-        found_value = layout.get_sessions()
+        found_value_tmp = layout.get_sessions()
     elif value == 'task':
-        found_value = layout.get_tasks()
+        found_value_tmp = layout.get_tasks()
+    found_value = []
+    for v in found_value_tmp:
+        if "%s-" % value not in v:
+            found_value.append("%s-%s" % (value, v))
+        else:
+            found_value.append(v)
     if len(found_value) != 1:
         if len(found_value) == 0:
             raise Exception("Found no %s name from data directory %s!" % (value, datadir))
         if len(found_value) > 1:
             if target is not None and target in found_value:
                 found_value = [target]
-            else:
+            elif value != 'task':
+                # we allow multiple tasks, but not multiple subjects or sessions
                 raise Exception("Found more than 1 %s name from data directory %s! %s" %
                                 (value, datadir, found_value))
-    found_value = found_value[0]
-    if "%s-" % value not in found_value:
-        found_value = "%s-%s" % (value, found_value)
     return found_value
 
 
@@ -50,7 +54,8 @@ def main(arglist):
     parser.add_argument('-datadir', required=True, help='Raw MR data path')
     parser.add_argument('-outdir', help='Output directory path. ignored if dir_structure==\'bids\'')
     parser.add_argument('-epis', nargs='+', type=int,
-                        help='EPI scan numbers')
+                        help=('EPI scan numbers, optional. If set (and you\'re using bids data), '
+                              'you must only have one task or use the bids_task input argument.'))
     parser.add_argument('-sbref', type=int,
                         help=('Single band reference scan number. Only required if dir_structure is'
                               ' prisma (if bids, we determine it from filenames)'))
@@ -124,50 +129,45 @@ def main(arglist):
         session['Freesurfer_subject_name'] = args['subject']
         session['nii_temp'] = op.join(session['data'], '%02d+*', '*.nii')
         session['epis'] = [glob(session['nii_temp'] % r)[0] for r in args['epis']]
-        # we want these to be 1-indexed. and it must be a list so it's json-serializable
-        session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1).tolist()
         session['sbref'] = glob(session['nii_temp'] % args['sbref'])[0]
         session['distort_PE'] = glob(session['nii_temp'] % args['distortPE'])[0]
         session['distort_revPE'] = glob(session['nii_temp'] % args['distortrevPE'])[0]
         session['PE_dim'] = args['PEdim']
         session['out'] = args['outdir']
-        session['out_name'] = "timeseries_corrected_run-%02d.nii.gz"
+        session['out_names'] = ["timeseries_corrected_run-%02d.nii.gz" % i
+                                for i in range(1, len(session['epis']) + 1)]
     elif args['dir_structure'] == 'bids':
         layout = BIDSLayout(session['data'])
-        session['BIDS_subject_name'] = _get_BIDS_name(layout, 'sub', session['data'])
-        session['BIDS_session_name'] = _get_BIDS_name(layout, 'ses', session['data'])
-        session['BIDS_task_name'] = _get_BIDS_name(layout, 'task', session['data'],
-                                                   args['bids_task'])
+        # _gets_BIDS_name returns a list, but we've already checked (for sub and ses) that it only
+        # contains one value, so we just grab that
+        session['BIDS_subject_name'] = _get_BIDS_name(layout, 'sub', session['data'])[0]
+        session['BIDS_session_name'] = _get_BIDS_name(layout, 'ses', session['data'])[0]
+        # this will be a list of task names (though in most cases, it will only contain one value)
+        session['BIDS_task_names'] = _get_BIDS_name(layout, 'task', session['data'],
+                                                    args['bids_task'])
         if args['subject'] is None:
             # we do NOT want "sub-" in the Freesurfer subject name
             session['Freesurfer_subject_name'] = session['BIDS_subject_name'].replace('sub-', '')
         else:
             session['Freesurfer_subject_name'] = args['subject']
+            
+        test_files = layout.get('tuple', extensions=['nii', 'nii.gz'], type='bold',
+                                task=[i.replace('task-', '') for i in session["BIDS_task_names"]])
         if args['epis'] is not None:
             # then we assume that args['epis'] gives us the run numbers we want
-            for i in args['epis']:
-                if len(layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
-                                  run=i, task=session["BIDS_task_name"].replace('task-'))) > 1:
-                    raise Exception("Found multiple bold nifti files with run %s! We require that "
-                                    "there only be 1." % i)
-            session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
-                                         run=args['epis'],
-                                         task=session["BIDS_task_name"].replace('task-'))
-            session['epi_output_nums'] = args['epis']
+            run_nums = args['epis']
+            assert len(session['BIDS_task_names']) == 1, "If epis argument is set, can only analyze one task!"
+            task_names = [session['BIDS_task_names'][0].replace('task-', '') for i in run_nums]
         else:
-            test_files = layout.get('tuple', extensions=['nii', 'nii.gz'], type='bold',
-                                    task=session["BIDS_task_name"].replace('task-', ''))
-            for i in test_files:
-                if len(layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
-                                  run=i.run,
-                                  task=session["BIDS_task_name"].replace('task-', ''))) > 1:
-                    raise Exception("Found multiple bold nifti files with run %s! We require that "
-                                    "there only be 1." % i.run)
-            session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold',
-                                         task=session["BIDS_task_name"].replace('task-', ''))
-            # we want these to be 1-indexed. and it must be a list so it's json-serializable
-            session['epi_output_nums'] = np.arange(1, len(session['epis']) + 1).tolist()
-
+            run_nums = [i.run for i in test_files]
+            task_names = [i.task for i in test_files]
+        for i, n in zip(run_nums, task_names):
+            if len(layout.get('file', extensions=['nii', 'nii.gz'], type='bold', run=i,
+                              task=n)) != 1:
+                raise Exception("Found zero or multiple bold nifti files with run %s, task %s! We "
+                                "require that there only be 1." % i, n)
+        session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold', run=run_nums,
+                                     task=task_names)
         if len(session['epis']) == 0:
             raise Exception("Unable to find any epis!")
         session['sbref'] = layout.get('file', extensions=['nii', 'nii.gz'], type='sbref')[0]
@@ -191,9 +191,11 @@ def main(arglist):
                                     ("derivatives/{bids_derivative_name}/{BIDS_subject_name}/"
                                      "{BIDS_session_name}/")))
         session['out'] = out_dir.format(**session)
-        out_name = ("{BIDS_subject_name}_{BIDS_session_name}_{BIDS_task_name}_run-%02d_"
-                    "{bids_suffix}.nii.gz")
-        session['out_name'] = out_name.format(**session)
+        # MAKE SURE THIS IS GZIPPED
+        session['out_names'] = [op.split(i)[1].replace('bold', session['bids_suffix'])
+                                for i in session['epis']]
+        session['out_names'] = [i + '.gz' if not i.endswith('gz') else i
+                                for i in session['out_names'] ]
     else:
         raise Exception("Don't know what to do with dir_structure %s!" % args['dir_structure'])
 
@@ -287,7 +289,7 @@ def create_preproc_workflow(session):
     PEs = np.repeat([session['PE_dim'], session['PE_dim'] + '-'], 3)
     unwarp_dist = Node(fsl.TOPUP(encoding_direction=list(PEs),
                                  readout_times=[1, 1, 1, 1, 1, 1],
-                                 config='b02b0.cnf'),
+                                 config='b02b0.cnf', fwhm=0),
                        name='unwarp_distort')
     wf.connect(merge_dist, 'merged_file', unwarp_dist, 'in_file')
 
@@ -361,9 +363,8 @@ def create_preproc_workflow(session):
 
 
     #---Copy important files to main directory---
-    substitutions = [('_merge_epis%d/timeseries_corrected.nii.gz' % i,
-                      session['out_name'] % r)
-                     for i, r in enumerate(session['epi_output_nums'])]
+    substitutions = [('_merge_epis%d/timeseries_corrected.nii.gz' % i, n)
+                     for i, n in enumerate(session['out_names'])]
     ds = Node(DataSink(base_directory=os.path.abspath(session['out']),
                        substitutions=substitutions),
               name='outfiles')
