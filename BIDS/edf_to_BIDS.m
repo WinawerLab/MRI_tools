@@ -9,15 +9,19 @@
 % mgl and mrTools toolboxes
 % addpath(genpath('/Volumes/server/Projects/MEG/Eyetracking_scripts/toolboxes'))
 
+% jsonwrite
+% tbUse('JSONio')
+
+
 %% 1. Define parameters and paths
 
 % BIDS specifics
 sub  = 'wlsubj042';
 ses  = 'mri3t01';
-task = 'pRF';
+task = 'sfp';
 
 % Get edf path
-rawDataPath = '/Volumes/server/Projects/tutorial_dataset/color_pRF/raw_behavior';
+rawDataPath = '/Volumes/server/Projects/tutorial_dataset/spatial_frequency_preferences/raw_behavior';
 savePath    = rawDataPath;
 
 %% 1. Find edf data
@@ -38,24 +42,27 @@ for r = 1:numRuns
 
 
     % Define BIDS compatible filename
-    bidsFileName = sprintf('sub-%s_ses-%s_task-%s_run-%d_physio.tsv.gz', sub,ses,task,r);
+    tsvFileName = sprintf('sub-%s_ses-%s_task-%s_run-0%d_physio.tsv.gz', sub,ses,task,r);
 
     % Write data cell to a tsv file.
-    dlmwrite(fullfile(savePath,bidsFileName),dataCells, 'Delimiter', '\t');
+    dlmwrite(fullfile(savePath,tsvFileName),dataCells, 'Delimiter', '\t');
 
 end
 
-
+return
 %% Create a JSON file
 
+jsonFileName = sprintf('sub-%s_ses-%s_task-%s_physio.json', sub,ses,task);
 
-metaData = struct( ...
-        'SamplingFrequency', samplerate, ... % Hz
+
+% Question: do we want to add more meta Data?
+S = struct( ...
+        'SamplingFrequency', eyd.samplerate, ... % Hz
         'FileFormat', 'EDF', ...
         'StartTime', eyd.gaze.time(1), ...
         'Columns', fieldnames(eyd.gaze), ...
         'RecordedEye', eyd.whicheye);
     
-    
-
+% Save physio json file    
+jsonwrite(fullfile(savePath, jsonFileName),S);
 
