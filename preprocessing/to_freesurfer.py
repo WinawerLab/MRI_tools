@@ -9,6 +9,9 @@
 import argparse, sys, os, six
 import neuropythy as ny, numpy as np, nibabel as nib
 
+if six.PY3:
+    from functools import reduce
+
 def main(args):
     # Parse the arguments...
     parser = argparse.ArgumentParser()
