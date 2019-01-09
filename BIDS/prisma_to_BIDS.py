@@ -326,14 +326,14 @@ def json_check(dir_to_check):
     if not json_files:
         # then there are no json files to check
         return
-    for jf in json_files.iterkeys():
+    for jf in json_files.keys():
         with open(jf) as f:
             json_files[jf] = json.load(f)
     shared_dict = {}
-    all_keys = {k for jd in json_files.itervalues() for k in jd.iterkeys()}
+    all_keys = {k for jd in json_files.values() for k in jd.keys()}
     for k in all_keys:
         try:
-            all_vals = [jd[k] for jd in json_files.itervalues()]
+            all_vals = [jd[k] for jd in json_files.values()]
             try:
                 counts = Counter(all_vals)
             except TypeError:
@@ -347,17 +347,17 @@ def json_check(dir_to_check):
             shared_dict[k] = counts.most_common()[0][0]
         except KeyError:
             pass
-    for jf, jd in json_files.iteritems():
-        for k in shared_dict.iterkeys():
+    for jf, jd in json_files.items():
+        for k in shared_dict.keys():
             if shared_dict[k] == jd[k]:
                 jd.pop(k)
         os.remove(jf)
         if any(jd.keys()):
             with open(jf, 'w') as f:
                 json.dump(jd, f)
-    sup_dir = os.path.dirname(os.path.dirname(json_files.keys()[0]))
-    name_parts = os.path.split(json_files.keys()[0])[-1].split("_")
-    for k in json_files.keys()[1:]:
+    sup_dir = os.path.dirname(os.path.dirname(list(json_files.keys())[0]))
+    name_parts = os.path.split(list(json_files.keys())[0])[-1].split("_")
+    for k in list(json_files.keys())[1:]:
         name_parts = [n for n in name_parts if n in os.path.split(k)[-1].split("_")]
     with open(os.path.join(sup_dir, "_".join(name_parts)), 'w') as f:
         json.dump(shared_dict, f)
