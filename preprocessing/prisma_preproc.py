@@ -9,7 +9,7 @@ from nipype.interfaces import fsl, freesurfer as fs
 import json
 import warnings
 try:
-    from bids.grabbids import BIDSLayout
+    from bids import BIDSLayout
 except IOError:
     warnings.warn("Can't find pybbids, so won't be able to pre-process BIDS data")
 
@@ -137,7 +137,7 @@ def main(arglist):
         session['out_names'] = ["timeseries_corrected_run-%02d.nii.gz" % i
                                 for i in range(1, len(session['epis']) + 1)]
     elif args['dir_structure'] == 'bids':
-        layout = BIDSLayout(session['data'])
+        layout = BIDSLayout(session['data'], validate=False)
         # _gets_BIDS_name returns a list, but we've already checked (for sub and ses) that it only
         # contains one value, so we just grab that
         session['BIDS_subject_name'] = _get_BIDS_name(layout, 'sub', session['data'])[0]
@@ -151,7 +151,7 @@ def main(arglist):
         else:
             session['Freesurfer_subject_name'] = args['subject']
             
-        test_files = layout.get('tuple', extensions=['nii', 'nii.gz'], type='bold',
+        test_files = layout.get('tuple', extensions=['nii', 'nii.gz'], suffix='bold',
                                 task=[i.replace('task-', '') for i in session["BIDS_task_names"]])
         if args['epis'] is not None:
             # then we assume that args['epis'] gives us the run numbers we want
@@ -162,16 +162,16 @@ def main(arglist):
             run_nums = [i.run for i in test_files]
             task_names = [i.task for i in test_files]
         for i, n in zip(run_nums, task_names):
-            if len(layout.get('file', extensions=['nii', 'nii.gz'], type='bold', run=i,
+            if len(layout.get('file', extensions=['nii', 'nii.gz'], suffix='bold', run=i,
                               task=n)) != 1:
                 raise Exception("Found zero or multiple bold nifti files with run %s, task %s! We "
                                 "require that there only be 1." % i, n)
-        session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], type='bold', run=run_nums,
+        session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], suffix='bold', run=run_nums,
                                      task=task_names)
         if len(session['epis']) == 0:
             raise Exception("Unable to find any epis!")
-        session['sbref'] = layout.get('file', extensions=['nii', 'nii.gz'], type='sbref')[0]
-        distortion_scans = layout.get('file', extensions=['nii', 'nii.gz'], type='epi')
+        session['sbref'] = layout.get('file', extensions=['nii', 'nii.gz'], suffix='sbref')[0]
+        distortion_scans = layout.get('file', extensions=['nii', 'nii.gz'], suffix='epi')
         distortion_PEdirections = {}
         for scan in distortion_scans:
             distortion_PEdirections[layout.get_metadata(scan)['PhaseEncodingDirection']] = scan
