@@ -13,6 +13,12 @@ simply copy over the anatomical data), which also requires FSL, and
 the preprocessing script requires FSL (version 5.0.10, 6.0 doesn't
 seem to work) and Freesurfer.
 
+For `bidsGLM.m` and its associated scripts, you will need
+[GLMdenoise](https://github.com/kendrickkay/GLMdenoise) to run the GLM
+and, optionally, [vistasoft](https://github.com/vistalab/vistasoft) if
+you want to run GLMdenoise on `.mgz` files (freesurfer surface files);
+for niftis, we use the built-in `niftiread` function.
+
 # How to use
 
 ## Preprocessing
