@@ -1,0 +1,28 @@
+{
+	"hrfmodel": "assume",
+	"hrfknobs": null,
+	"opt": {
+		"extraregressors": null,
+		"maxpolydeg": null,
+		"seed": null,
+		"bootgroups": null,
+		"numforhrf": null,
+		"hrffitmask": null,
+		"brainthresh": null,
+		"brainR2": null,
+		"brainexclude": null,
+		"numpcstotry": null,
+		"pcR2cutoff": null,
+		"pcR2cutoffmask": null,
+		"pcstop": null,
+		"pccontrolmode": null,
+		"numboots": null,
+		"denoisespec": null,
+		"wantpercentbold": null,
+		"hrfthresh": null,
+		"noisepooldirect": null,
+		"wantparametric": null,
+		"wantsanityfigures": null,
+		"drawfunction": null
+	}
+}
