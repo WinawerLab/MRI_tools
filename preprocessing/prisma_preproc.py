@@ -185,7 +185,10 @@ def main(arglist):
         PE_conversion_dict = {'i': 'x', 'j': 'y', 'k': 'z', 'i-': 'x-', 'j-': 'y-', 'k-': 'z-'}
         session['PE_dim'] = PE_conversion_dict[epi_PEdirections[0]]
         session['distort_PE'] = distortion_PEdirections[epi_PEdirections[0]]
-        session['distort_revPE'] = distortion_PEdirections["%s-" % epi_PEdirections[0]]
+        if '-' not in epi_PEdirections[0]:
+            session['distort_revPE'] = distortion_PEdirections["%s-" % epi_PEdirections[0]]
+        else:
+            session['distort_revPE'] = distortion_PEdirections[epi_PEdirections[0].replace('-', '')]
         session['bids_derivative_name'] = args['bids_derivative_name']
         session['bids_suffix'] = args['bids_suffix']
         out_dir = op.abspath(op.join(session['data'], "../..",
@@ -290,7 +293,7 @@ def create_preproc_workflow(session):
     if '-' not in session['PE_dim']:
         PEs = np.repeat([session['PE_dim'], session['PE_dim'] + '-'], 3)
     else:
-        PEs = np.repeat([session['PE_dim'], session['PE_dim'].replace('-','')], 3)
+        PEs = np.repeat([session['PE_dim'], session['PE_dim'].replace('-', '')], 3)
     unwarp_dist = Node(fsl.TOPUP(encoding_direction=list(PEs),
                                  readout_times=[1, 1, 1, 1, 1, 1],
                                  config='b02b0.cnf', fwhm=0),
