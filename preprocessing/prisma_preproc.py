@@ -182,7 +182,8 @@ def main(arglist):
             raise Exception("Cannot find unique phase encoding direction for your functional data"
                             " in data directory %s!" % session['data'])
         # we want PEdim to be x, y, or z, but coming from BIDS jsons it will be one of i, j, k
-        session['PE_dim'] = {'i': 'x', 'j': 'y', 'k': 'z'}[epi_PEdirections[0]]
+        PE_conversion_dict = {'i': 'x', 'j': 'y', 'k': 'z', 'i-': 'x-', 'j-': 'y-', 'k-': 'z-'}
+        session['PE_dim'] = PE_conversion_dict[epi_PEdirections[0]]
         session['distort_PE'] = distortion_PEdirections[epi_PEdirections[0]]
         session['distort_revPE'] = distortion_PEdirections["%s-" % epi_PEdirections[0]]
         session['bids_derivative_name'] = args['bids_derivative_name']
@@ -286,7 +287,10 @@ def create_preproc_workflow(session):
     wf.add_nodes([merge_dist])
 
     # Run topup to estimate warpfield and create unwarped distortion scans
-    PEs = np.repeat([session['PE_dim'], session['PE_dim'] + '-'], 3)
+    if '-' not in session['PE_dim']:
+        PEs = np.repeat([session['PE_dim'], session['PE_dim'] + '-'], 3)
+    else:
+        PEs = np.repeat([session['PE_dim'], session['PE_dim'].replace('-','')], 3)
     unwarp_dist = Node(fsl.TOPUP(encoding_direction=list(PEs),
                                  readout_times=[1, 1, 1, 1, 1, 1],
                                  config='b02b0.cnf', fwhm=0),
