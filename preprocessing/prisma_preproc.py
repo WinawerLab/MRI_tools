@@ -195,11 +195,13 @@ def main(arglist):
                                     ("derivatives/{bids_derivative_name}/{BIDS_subject_name}/"
                                      "{BIDS_session_name}/")))
         session['out'] = out_dir.format(**session)
-        # MAKE SURE THIS IS GZIPPED
-        session['out_names'] = [op.split(i)[1].replace('bold', session['bids_suffix'])
+        # we replace the bids suffix _bold with _preproc (or whatever we set bids_suffix to
+        # be). this way, 'bold' can occur elsewhere in the filename without causing any issues.
+        session['out_names'] = [op.split(i)[1].replace('_bold', '_'+session['bids_suffix'])
                                 for i in session['epis']]
+        # MAKE SURE THIS IS GZIPPED
         session['out_names'] = [i + '.gz' if not i.endswith('gz') else i
-                                for i in session['out_names'] ]
+                                for i in session['out_names']]
     else:
         raise Exception("Don't know what to do with dir_structure %s!" % args['dir_structure'])
 
