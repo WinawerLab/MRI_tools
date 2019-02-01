@@ -70,7 +70,7 @@ if ~exist('runnum', 'var') || isempty(runnum)
          
     runnum = cell(1,length(tasks));
     for ii = 1:length(tasks)
-       files = dir(fullfile(sessionDir, 'func', sprintf('*task-%s_*bold.nii.*', tasks{ii})));
+       files = dir(fullfile(sessionDir, 'func', sprintf('*task-%s_*bold.nii*', tasks{ii})));
        for jj = 1:length(files)
            runnum{ii}(jj) = str2double(bidsGet(files(jj).name, 'run'));
        end       
