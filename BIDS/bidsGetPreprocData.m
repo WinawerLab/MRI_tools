@@ -28,23 +28,40 @@ for ii = 1:length(tasks)
     for jj = 1:length(runnums{ii})
         fprintf('.')
         
+        % we want to check for both 0-padded and non-0-padded versions...
         if usePreproc
-            fnamePrefix  = sprintf('*_task-%s*run-*%d_preproc*',...
+            fnamePrefix  = sprintf('*_task-%s*run-%d_preproc*',...
+                tasks{ii},runnums{ii}(jj));
+            fnamePrefixZeroPad = sprintf('*_task-%s*run-%02d_preproc*',...
                 tasks{ii},runnums{ii}(jj));
         else
-            fnamePrefix  = sprintf('*_task-%s*run-*%d_bold*',...
+            fnamePrefix  = sprintf('*_task-%s*run-%d_bold*',...
+                tasks{ii},runnums{ii}(jj));
+            fnamePrefixZeroPad = sprintf('*_task-%s*run-%02d_bold*',...
                 tasks{ii},runnums{ii}(jj));
         end
-        
-        fname         = dir(fullfile(dataPath, fnamePrefix));
+
+        fname = dir(fullfile(dataPath, fnamePrefix));
+        % we only need to check both if they're different; if we're
+        % looking at run 10, 0-padded and non-0-padded will be the
+        % same string
+        if ~strcmp(fnamePrefix, fnamePrefixZeroPad)
+            fname = [fname; dir(fullfile(dataPath, fnamePrefixZeroPad))];
+        end
+        % This guarantees that we found at least one
         assert(~isempty(fname));
         
         [~, ~, ext] = fileparts(fname(1).name);
         switch ext
             case {'.nii' '.gz'}
+                % if these are niftis, then there should only be
+                % one file
+                assert(length(fname) == 1);
                 data{scan}    = niftiread(fullfile (dataPath, fname.name));
                 info{scan}    = niftiinfo(fullfile (dataPath, fname.name));
             case '.mgz'
+                % if they're surfaces, there should be two of them
+                assert(length(fname) == 2);
                 hemis = {'lh', 'rh'};
                 for ll = 1: length (hemis)
                     % We index to make sure the order is always the same

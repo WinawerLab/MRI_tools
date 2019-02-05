@@ -281,12 +281,18 @@ scan = 1;
 for ii = 1:length(tasks)
     for jj = 1:length(runnums{ii})
         
-        tsvIdx = contains(tsvNames,sprintf('task-%s_run-%d',...
+        % check for both 0-padded and non-0-padded integers, throw
+        % an error if we find other than 1.
+        tsvIdx = contains(tsvNames,sprintf('task-%s_run-%d_',...
             tasks{ii}, runnums{ii}(jj)));
-        
-        if isempty(find(tsvIdx, 1)) % double check that there's a design matrix
+        tsvIdx = or(tsvIdx, contains(tsvNames,sprintf('task-%s_run-%02d_',...
+            tasks{ii}, runnums{ii}(jj))));
+        if sum(tsvIdx) > 1
+           error(['Found more than one design matrix for task %s, run %d / '...
+                  '%02d'], tasks{ii}, runnums{ii}(jj), runnums{ii}(jj))
+        elseif sum(tsvIdx) == 0 
             error (['Design Matrix *_task-%s_run-%d_design.tsv'...
-                ' was not found'],tasks{ii}, runnums{ii}(jj))
+                    ' was not found'],tasks{ii}, runnums{ii}(jj))
         else
             design{scan} = load(fullfile(tsvFiles(tsvIdx).folder,tsvFiles(tsvIdx).name));
             scan         = scan+1;
