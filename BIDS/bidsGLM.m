@@ -113,7 +113,7 @@ function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
 %     runnums           = [];
 %     designFolder      = 'roundedTR';
 %     glmOptsPath       = 'glmOptsAssume.json';
-%     json = loadjson(glmOptsPath);
+%     json = jsondecode(fileread(glmOptsPath));
 %     json.hrfknobs     = results.models{1};
 %     glmOptsPath       = fullfile(tempdir,glmOptsPath);
 %     savejson('', json, 'FileName', glmOptsPath);
@@ -153,7 +153,7 @@ function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
 %     tasks             = {'spatialobject' 'spatialpattern' 'temporalpattern'};
 %     runnums           = [];
 %     glmOptsPath       = 'glmOptsAssume.json';
-%     json = loadjson(glmOptsPath);
+%     json = jsondecode(fileread(glmOptsPath));
 %     json.hrfknobs     = results.models{1};
 %     glmOptsPath       = fullfile(tempdir,glmOptsPath);
 %     savejson('', json, 'FileName', glmOptsPath);
@@ -302,7 +302,7 @@ if ~exist('glmOptsPath', 'var') || isempty(glmOptsPath)
     glmOptsPath = glmOptsMakeDefaultFile; 
 end
 
-json = loadjson(glmOptsPath);
+json = jsondecode(fileread(glmOptsPath));
 
 if isfield(json, 'hrfmodel'), hrfmodel = json.hrfmodel;
 else, hrfmodel = 'optimize'; end
