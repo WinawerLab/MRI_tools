@@ -53,7 +53,7 @@ dataPath = fullfile (projectDir,'derivatives', dataFolder,...
 assert(boolean(exist(dataPath, 'dir')))
 
 % <Analysis folder>
-if ~exist(analysisDir , 'dir')
+if ~exist('analysisDir', 'var') || isempty(analysisDir)
     analysisDir = fullfile (fileparts (projectDir), 'Analyses', ...
         sprintf('sub-%s',subject), sprintf('ses-%s',session));
    
@@ -64,12 +64,12 @@ cd(analysisDir);
 %% Whole brain reference
 % Set up file names and associated locations
 anatFile  = 't1.nii.gz';
-anatPath   = fullfile('3DAnatomy', anatFile);
+anatPath   = fullfile('./3DAnatomy', anatFile);
 classFile = 't1_class.nii.gz';
-classPath  = fullfile('3DAnatomy', classFile);
+classPath  = fullfile('./3DAnatomy', classFile);
 
 % Look for anatomy files and make them if they don't exist
-if ~exist(fullfile(analysisDir,'3DAnatomy'),'dir')
+if ~exist(fullfile(analysisDir,'./3DAnatomy'),'dir')
     anatomyPath = fullfile('/Volumes/server/Projects/Anatomy',subject);
     if ~exist(anatomyPath, 'dir') ||~exist(fullfile(anatomyPath, anatFile), 'file')...
             && ~exist(fullfile(anatomyPath,classFile), 'file')

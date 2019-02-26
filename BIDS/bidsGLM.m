@@ -233,17 +233,25 @@ if ~exist(figuredir, 'dir'); mkdir(figuredir); end
 
 %% Run the denoising alogithm
 
-if length(design) == 1
+% Check whether conditions repeat across runs. If each run has unique
+% predictors, then we cannot cross-validate, and therefore skip call
+% GLMestimatemodel rather than GLMdenoisedata
 
-    warning(['Calling <GLMestimatemodel> rather than <GLMdenoisedata> ' ...
-        'because there is only 1 scan, so cross-validation is not possible.']);
-    
-    results = GLMestimatemodel(design,data,stimdur,tr,hrfmodel,hrfknobs,0,opt);
+preds=cell2mat(cellfun(@(x) sum(x)>0, design, 'UniformOutput', false)');
+if any(prod(preds)), xval = true; else, xval = false; end
+if length(design) == 1, xval = false; end
+
+if xval
+
+    results  = GLMdenoisedata (design,data,stimdur,tr,hrfmodel,hrfknobs,opt,figuredir);
 
 else
     
-    results  = GLMdenoisedata (design,data,stimdur,tr,hrfmodel,hrfknobs,opt,figuredir);
-
+    warning(['Calling <GLMestimatemodel> rather than <GLMdenoisedata> ' ...
+        'because each scan has unique predictors, so cross-validation is not possible.']);
+    
+    results = GLMestimatemodel(design,data,stimdur,tr,hrfmodel,hrfknobs,0,opt);
+    
 end
 
 % save the results

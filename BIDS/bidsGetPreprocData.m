@@ -37,6 +37,8 @@ for ii = 1:length(tasks)
         end
         
         fname         = dir(fullfile(dataPath, fnamePrefix));
+        idx           = contains({fname.name}, {'nii', 'gz', 'mz'});
+        fname         = fname(idx);
         assert(~isempty(fname));
         
         [~, ~, ext] = fileparts(fname(1).name);
@@ -55,7 +57,7 @@ for ii = 1:length(tasks)
                 info{scan}    = rmfield(tempData(1), 'vol');
                 
             otherwise
-                error('Unrecognized file format %s', fname)
+                error('Unrecognized file format %s', ext)
         end
         scan          = scan+1;
     end
