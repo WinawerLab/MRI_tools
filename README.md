@@ -10,7 +10,14 @@ additionally [pydeface](https://github.com/poldracklab/pydeface)
 version 2.0 is required to deface anatomical data (in
 `prisma_to_BIDS.py`; if either pydeface or FSL is unavailable, we will
 simply copy over the anatomical data), which also requires FSL, and
-the preprocessing script requires FSL and Freesurfer.
+the preprocessing script requires FSL (version 5.0.10, 6.0 doesn't
+seem to work) and Freesurfer.
+
+For `bidsGLM.m` and its associated scripts, you will need
+[GLMdenoise](https://github.com/kendrickkay/GLMdenoise) to run the GLM
+and, optionally, [vistasoft](https://github.com/vistalab/vistasoft) if
+you want to run GLMdenoise on `.mgz` files (freesurfer surface files);
+for niftis, we use the built-in `niftiread` function.
 
 # How to use
 
