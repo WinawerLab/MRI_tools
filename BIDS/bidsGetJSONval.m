@@ -10,6 +10,8 @@ function val = bidsGetJSONval(rawDataPath,tasks, runnums, fieldname)
 %
 %  Output
 %   val:
+%
+% Example: 
 
 val = cell(1,length(tasks));
 

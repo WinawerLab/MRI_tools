@@ -12,6 +12,8 @@ function [data, info] = bidsGetPreprocData(dataPath, tasks, runnums, usePreproc)
 %   data:       the time-series data for each run with dimensions
 %                X x Y x Z x time
 %   info:       nifti header for each run
+%
+% Example: 
 
 if ~exist('usePreproc', 'var') || isempty(usePreproc)
     usePreproc = true;
