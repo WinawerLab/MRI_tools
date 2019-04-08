@@ -82,7 +82,7 @@ def main(args):
         for (dname,im) in six.iteritems(to_output):
             (ldat, rdat) = sub.image_to_cortex(im, args.layer,
                                                method=args.method, dtype=np.float32,
-                                               weight=v)
+                                               weights=v)
             if dname == 'xcrds':
                 xy[0][0] = ldat
                 xy[1][0] = rdat
