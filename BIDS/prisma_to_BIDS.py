@@ -40,7 +40,7 @@ def _construct_base_filename(example_file, output_dir, data_type, run_flag=False
     run_flag: boolean, default False. Whether to add _run-%02d to the end of the base filename or
     not.
     """
-    subj_id = re.search("(wl_subj[0-9]+)", example_file).groups()
+    subj_id = re.search("(wlsubj[0-9]+)", example_file).groups()
     assert len(subj_id) == 1, "Found more than one subject_id in path name! %s" % subj_id
     # we can't have any underscores in our subj_id, because BIDS uses them to separate fields.
     subj_id = subj_id[0].replace("_", "")
