@@ -169,7 +169,8 @@ def main(arglist):
         session['epis'] = layout.get('file', extensions=['nii', 'nii.gz'], suffix='bold', run=run_nums,
                                      task=task_names)
         if len(session['epis']) == 0:
-            raise Exception("Unable to find any epis!")
+            raise Exception("Unable to find any epis! This probably means your pybids version isn'"
+                            "t new enough; it must be version >= 0.7!")
         session['sbref'] = layout.get('file', extensions=['nii', 'nii.gz'], suffix='sbref')[0]
         distortion_scans = layout.get('file', extensions=['nii', 'nii.gz'], suffix='epi')
         distortion_PEdirections = {}
