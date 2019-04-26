@@ -58,7 +58,7 @@ if ~exist('analysisDir', 'var') || isempty(analysisDir)
         sprintf('sub-%s',subject), sprintf('ses-%s',session));
    
 end
-assert(boolean(exist(analysisDir, 'dir')))
+if ~exist(analysisDir, 'dir'), mkdir(analysisDir); end
 cd(analysisDir);
 
 %% Whole brain reference
