@@ -1,4 +1,4 @@
-function [data, info] = bidsGetPreprocData(dataPath, tasks, runnums, usePreproc)
+function [data, info, fullFile] = bidsGetPreprocData(dataPath, tasks, runnums, usePreproc)
 %
 % Inputs
 %   dataPath:   path to folder containing preprocessed data
@@ -12,6 +12,7 @@ function [data, info] = bidsGetPreprocData(dataPath, tasks, runnums, usePreproc)
 %   data:       the time-series data for each run with dimensions
 %                X x Y x Z x time
 %   info:       nifti header for each run
+%   fullFile:   The (nifti) time-series data including header information 
 %
 % Example: 
 
@@ -53,13 +54,14 @@ for ii = 1:length(tasks)
         % This guarantees that we found at least one
         assert(~isempty(fname));
         
-        [~, ~, ext] = fileparts(fname(1).name);
+        [~, ~, ext] = fileparts(fname(1).name);%1
         switch ext
             case {'.nii' '.gz'}
                 % if these are niftis, then there should only be
                 % one file
                 assert(length(fname) == 1);
-                data{scan}    = niftiread(fullfile (dataPath, fname.name));
+                fullFile{scan}= niftiRead(fullfile (dataPath, fname.name));
+                data{scan}    = fullFile{scan}.data; 
                 info{scan}    = niftiinfo(fullfile (dataPath, fname.name));
             case '.mgz'
                 % if they're surfaces, there should be two of them
@@ -70,6 +72,7 @@ for ii = 1:length(tasks)
                     idx = contains ({fname.name} , hemis{ll});
                     tempData(ll) = MRIread(fullfile (dataPath, fname(idx).name));
                 end
+                fullFile{scan}= [];
                 data{scan}    = cat(2,tempData(1).vol, tempData(2).vol);
                 info{scan}    = rmfield(tempData(1), 'vol');
                 
