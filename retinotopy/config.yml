@@ -1,6 +1,13 @@
+# the BIDS directory containing retinotopy information
 DATA_DIR: "/mnt/winawerlab/Projects/Retinotopy/BIDS"
-FREESURFER_DIR: "/share/apps/freesurfer/6.0.0"
+# temporary directory to save preprocess working directory; will
+# delete once finished
 WORKING_DIR: "/users-local/broderick/preprocess"
-VISTASOFT_PATH: "/home/wfb229/matlab-toolboxes/vistasoft"
+# directory on Tesla where you extracted retinotopy data
 TESLA_DIR: "/mnt/Tesla/color_retinotopy"
+# Freesurfer subjects directory
 SUBJECTS_DIR: "/mnt/winawerlab/Freesurfer_subjects/"
+# directory on Tesla containing extracted anatomy data, which has had
+# freesurfer run on it
+ANATOMY_DIR: "/mnt/Tesla/Anatomy"
+

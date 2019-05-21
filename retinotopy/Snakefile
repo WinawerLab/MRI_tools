@@ -25,7 +25,7 @@ TASKS = {}
 NRUNS = {}
 
 wildcard_constraints:
-    subject="sub-[a-z0-9]+",
+    subject="(sub-)?[a-z0-9]+",
     session="ses-[a-z0-9]+",
     run="run-[0-9]+",
     task="task-[a-z0-9]+",
@@ -41,7 +41,9 @@ rule preprocess_all:
 rule move_all:
     input:
         [os.path.join(config['DATA_DIR'], '{subject}', '{session}').format(subject=subj, session=ses)
-         for subj in SUBJECTS for ses in SESSIONS[subj]]
+         for subj in SUBJECTS for ses in SESSIONS[subj]],
+        [os.path.join(config['SUBJECTS_DIR'], '{subject}').format(subject=subj.replace('sub-', ''))
+         for subj in SUBJECTS]
 
 
 rule move_off_tesla:
@@ -66,6 +68,19 @@ rule move_off_tesla:
             shutil.copy(f, output[2])
         shell("rsync --exclude=*events.tsv -avPLuz %s/ %s" % (input[0], output[0]))
         shell("rsync -avPLuz %s/ %s" % (input[1], output[1]))
+
+
+rule move_freesurfer_off_tesla:
+    input:
+        os.path.join(config['ANATOMY_DIR'], 'derivatives', 'freesurfer', 'sub-{subject}')
+    output:
+        os.path.join(config['SUBJECTS_DIR'], '{subject}')
+    log:
+        os.path.join(config["DATA_DIR"], "code", "move_freesurfer_off_tesla", "sub-{subject}-%j.log")
+    benchmark:
+        os.path.join(config["DATA_DIR"], "code", "move_freesurfer_off_tesla", "sub-{subject}_benchmark.txt")
+    shell:
+        "rsync -avPLuz {input}/ {output}"
 
 
 def get_preprocess_inputs(wildcards):
