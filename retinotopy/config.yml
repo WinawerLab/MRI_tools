@@ -1,0 +1,6 @@
+DATA_DIR: "/mnt/winawerlab/Projects/Retinotopy/BIDS"
+FREESURFER_DIR: "/share/apps/freesurfer/6.0.0"
+WORKING_DIR: "/users-local/broderick/preprocess"
+VISTASOFT_PATH: "/home/wfb229/matlab-toolboxes/vistasoft"
+TESLA_DIR: "/mnt/Tesla/color_retinotopy"
+SUBJECTS_DIR: "/mnt/winawerlab/Freesurfer_subjects/"

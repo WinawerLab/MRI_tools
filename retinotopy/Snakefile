@@ -1,0 +1,178 @@
+import os
+
+configfile:
+    "config.yml"
+if not os.path.isdir(config["DATA_DIR"]):
+    raise Exception("Cannot find the dataset at %s" % config["DATA_DIR"])
+if os.system("module list") == 0:
+    # then we're on the cluster
+    ON_CLUSTER = True
+    shell.prefix(". /share/apps/anaconda3/5.3.1/etc/profile.d/conda.sh; conda activate retinotopy; "
+                 "module load fsl/5.0.10; module load freesurfer/6.0.0; module load matlab/2017a; "
+                 "export SUBJECTS_DIR=%s; " % config["SUBJECTS_DIR"])
+else:
+    ON_CLUSTER = False
+    shell.prefix("export SUBJECTS_DIR=%s; " % config["SUBJECTS_DIR"])
+
+
+SUBJECTS = ['sub-wlsubj081', 'sub-wlsubj095']
+SESSIONS = {'sub-wlsubj081': ['ses-01'],
+            'sub-wlsubj095': ['ses-01']}
+# if you have a different task than task-prf, insert it into here with a (subject, session) key,
+# e.g., ("sub-wlsubj001", "ses-01"): "task-example"
+TASKS = {}
+# every subject/session pair that's not in here has the full number of runs, 6
+NRUNS = {}
+
+
+rule preprocess_all:
+    input:
+        [os.path.join(config["DATA_DIR"], "derivatives", "preprocessed_reoriented", "{subject}", "{session}", "lh.{subject}_{session}_{task}_{run}_preproc.mgz").format(subject=sub, session=ses, task=TASKS[(sub, ses)], run="run-%02d"%i) for sub in SUBJECTS for ses in SESSIONS[sub] for i in range(1, NRUNS.get((sub, ses), 6)+1)],
+
+
+rule move_all:
+    input:
+        [os.path.join(config['DATA_DIR'], '{subject}', '{session}').format(subject=subj, session=ses)
+         for subj in SUBJECTS for ses in SESSIONS[subj]]
+
+
+rule move_off_tesla:
+    input:
+        os.path.join(config["TESLA_DIR"], "{subject}", "{session}"),
+        os.path.join(config["TESLA_DIR"], "sourcedata", "{subject}", "{session}"),
+    output:
+        directory(os.path.join(config["DATA_DIR"], "{subject}", "{session}")),
+        directory(os.path.join(config["DATA_DIR"], "sourcedata", "{subject}", "{session}")),
+        directory(os.path.join(config["DATA_DIR"], "derivatives", "mriqc_reports", "{subject}", "{session}")),
+    log:
+        os.path.join(config["DATA_DIR"], "code", "move_off_tesla", "{subject}_{session}-%j.log")
+    benchmark:
+        os.path.join(config["DATA_DIR"], "code", "move_off_tesla", "{subject}_{session}_benchmark.txt")
+    run:
+        import glob
+        import shutil
+        import os
+        os.makedirs(output[2])
+        reports_path = os.path.join(config["TESLA_DIR"], "derivatives", "mriqc_reports", "{subject}_{session}_*").format(**wildcards)
+        for f in glob.glob(reports_path):
+            shutil.copy(f, output[2])
+        shell("rsync --exclude=*events.tsv -avPLuz %s/ %s" % (input[0], output[0]))
+        shell("rsync -avPLuz %s/ %s" % (input[1], output[1]))
+
+
+def get_preprocess_inputs(wildcards):
+    input_dict = {}
+    input_dict['freesurfer_files'] = os.path.join(config["SUBJECTS_DIR"], wildcards.subject.replace('sub-', ''))
+    input_dict['func_files'] = os.path.join(config["DATA_DIR"], "{subject}", "{session}", "func",
+                                            "{subject}_{session}_{task}_acq-PA_{run}_bold.nii.gz").format(**wildcards)
+    return input_dict
+
+
+rule preprocess:
+    input:
+        unpack(get_preprocess_inputs)
+    output:
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed_{run}_{task}", "{subject}", "{session}", "{subject}_{session}_{task}_acq-PA_{run}_preproc.nii.gz"),
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed_{run}_{task}", "{subject}", "{session}", "session.json"),
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed_{run}_{task}", "{subject}", "{session}", "sbref_reg_corrected.nii.gz"),
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed_{run}_{task}", "{subject}", "{session}", "distort2anat_tkreg.dat"),
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed_{run}_{task}", "{subject}", "{session}", "distortion_merged_corrected.nii.gz"),
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed_{run}_{task}", "{subject}", "{session}", "distortion_merged_corrected_mean.nii.gz"),
+    resources:
+        cpus_per_task = 10,
+        mem = 48
+    params:
+        plugin = "MultiProc",
+        data_dir = lambda wildcards: os.path.join(config['DATA_DIR'], wildcards.subject, wildcards.session),
+        working_dir = lambda wildcards: os.path.join(config['WORKING_DIR'], "%s_%s_%s" % (wildcards.subject, wildcards.session, wildcards.run)),
+        plugin_args = lambda wildcards, resources: ",".join("%s:%s" % (k,v) for k,v in {'n_procs': resources.cpus_per_task, 'memory_gb': resources.mem}.items()),
+        epi_num = lambda wildcards: int(wildcards.run.replace('run-', '')),
+        script_location = os.path.join("..", "preprocessing", "prisma_preproc.py")
+    benchmark:
+        os.path.join(config["DATA_DIR"], "code", "preprocessed", "{subject}_{session}_{task}_{run}_benchmark.txt")
+    log:
+        os.path.join(config["DATA_DIR"], "code", "preprocessed", "{subject}_{session}_{task}_{run}-%j.log")
+    shell:
+        # we want to remove the working directory afterwards because it's big and contains many
+        # files. it means that re-runs will take slightly longer, but since I was starting to run
+        # into the number of files quota on the cluster, it's worth it.
+        "python {params.script_location} -datadir {params.data_dir} -working_dir "
+        "{params.working_dir} -plugin {params.plugin} -dir_structure bids -plugin_args "
+        "{params.plugin_args} -epis {params.epi_num} -bids_derivative_name "
+        "preprocessed_{wildcards.run}_{wildcards.task}; rm -rf {params.working_dir};"
+
+
+rule rearrange_preprocess_extras:
+    input:
+        lambda wildcards: expand(os.path.join(config["DATA_DIR"], "derivatives", "preprocessed_run-{n:02d}_{task}", wildcards.subject, wildcards.session, wildcards.filename_ext), task=TASKS[(wildcards.subject, wildcards.session)], n=range(1, NRUNS.get((wildcards.subject, wildcards.session), 12)+1))
+    output:
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed", "{subject}", "{session}", "{filename_ext}")
+    log:
+        os.path.join(config["DATA_DIR"], "code", "preprocessed", "{subject}_{session}_rearrange_extras_{filename_ext}-%j.log")
+    benchmark:
+        os.path.join(config["DATA_DIR"], "code", "preprocessed", "{subject}_{session}_rearrange_extras_{filename_ext}_benchmark.txt")
+    run:
+        import subprocess
+        import os
+        import shutil
+        import json
+        if os.path.split(input[0])[-1] == 'session.json':
+            # we handle this differently, because we want to merge the jsons instead
+            master_json = {}
+            for filename in input:
+                run_name = os.path.abspath(filename).split(os.sep)[-2]
+                with open(filename) as f:
+                    master_json[run_name] = json.load(f)
+                os.remove(filename)
+            with open(output[0], 'w') as f:
+                json.dump(master_json, f)
+        else:
+            file1 = input[0]
+            for file2 in input[1:]:
+                if subprocess.call(['cmp', '-s', file1, file2]) == 1:
+                    raise Exception("%s and %s are different, they should be the same!" % (file1, file2))
+                else:
+                    os.remove(file2)
+            shutil.move(file1, output[0])
+
+rule rearrange_preprocess:
+    input:
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed_{run}_{task}", "{subject}", "{session}", "{subject}_{session}_{task}_acq-PA_{run}_preproc.nii.gz"),
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed", "{subject}", "{session}", "session.json"),
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed", "{subject}", "{session}", "sbref_reg_corrected.nii.gz"),
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed", "{subject}", "{session}", "distort2anat_tkreg.dat"),
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed", "{subject}", "{session}", "distortion_merged_corrected.nii.gz"),
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed", "{subject}", "{session}", "distortion_merged_corrected_mean.nii.gz"),
+    output:
+        # we drop the acq-PA bit because all of our scans have that, so it's not informative
+        os.path.join(config["DATA_DIR"], "derivatives", "preprocessed", "{subject}", "{session}", "{subject}_{session}_{task}_{run}_preproc.nii.gz"),
+    log:
+        os.path.join(config["DATA_DIR"], "code", "preprocessed", "{subject}_{session}_{task}_{run}_rearrange-%j.log")
+    benchmark:
+        os.path.join(config["DATA_DIR"], "code", "preprocessed", "{subject}_{session}_{task}_{run}_rearrange_benchmark.txt")
+    run:
+        import shutil
+        import os
+        shutil.move(input[0], output[0])
+        os.removedirs(os.path.dirname(input[0]))
+
+
+rule to_freesurfer:
+    input:
+        in_file = os.path.join(config['DATA_DIR'], "derivatives", "preprocessed",  "{subject}", "{session}", "{subject}_{session}_{task}_{run}_preproc.nii.gz"),
+        tkreg = os.path.join(config["DATA_DIR"], "derivatives", "preprocessed", "{subject}", "{session}", "distort2anat_tkreg.dat"),
+    output:
+        os.path.join(config['DATA_DIR'], "derivatives", "preprocessed_reoriented", "{subject}", "{session}", "lh.{subject}_{session}_{task}_{run}_preproc.mgz"),
+        os.path.join(config['DATA_DIR'], "derivatives", "preprocessed_reoriented", "{subject}", "{session}", "rh.{subject}_{session}_{task}_{run}_preproc.mgz")
+    benchmark:
+        os.path.join(config["DATA_DIR"], "code", "to_freesurfer", "{subject}_{session}_{task}_{run}_benchmark.txt")
+    log:
+        os.path.join(config["DATA_DIR"], "code", "to_freesurfer", "{subject}_{session}_{task}_{run}-%j.log")
+    params:
+        output_dir = lambda wildcards, output: os.path.dirname(output[0]),
+        script_location = os.path.join("..", "preprocessing", "to_freesurfer.py"),
+        # this will also produce a nifti output that we don't want to keep around.
+        tmp_nifti = lambda wildcards, output: output[0].replace('lh.', '').replace('.mgz', '.nii.gz')
+    shell:
+        "python {params.script_location} -v -s -o {params.output_dir} {input.tkreg} {input.in_file};"
+        " rm {params.tmp_nifti}"
