@@ -74,7 +74,7 @@ rule move_freesurfer_off_tesla:
     input:
         os.path.join(config['ANATOMY_DIR'], 'derivatives', 'freesurfer', 'sub-{subject}')
     output:
-        os.path.join(config['SUBJECTS_DIR'], '{subject}')
+        directory(os.path.join(config['SUBJECTS_DIR'], '{subject}'))
     log:
         os.path.join(config["DATA_DIR"], "code", "move_freesurfer_off_tesla", "sub-{subject}-%j.log")
     benchmark:
