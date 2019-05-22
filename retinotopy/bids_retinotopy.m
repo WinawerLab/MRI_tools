@@ -1,41 +1,34 @@
-%% BIDS-based retinotopy solver for the project
+function bids_retinotopy(bids_path, subject, session, task, anatomyDir)
+% BIDS-based retinotopy solver
 
-base_path = '/Volumes/server/Projects/Retinotopy/CMag/data/BIDS';
-cd(base_path);
+    if startsWith(subject, 'sub-')
+        subject = subject(5:end);
+    end
+    if startsWith(session, 'ses-')
+        session = session(5:end);
+    end
+    if startsWith(task, 'task-')
+        task = task(6:end);
+    end
 
-vista_path = fullfile(base_path, 'derivatives', 'vistasoft');
+    fprintf('\n\n *** Processing subject %s, session %s ***\n\n', subject, session);
 
-addpath(genpath(fullfile(vista_path, 'shared', 'code')));
-
-d = dir(base_path);
-for ii = 1:numel(d)
-    flnm = d(ii).name;
-    if ~startsWith(flnm, 'sub-') || ~d(ii).isdir, continue; end
-    sub = flnm(5:end);
-    if ~strcmp(sub, 'wlsubj085'), continue; end
-    fprintf('\n\n *** Processing subjects %s ***\n\n', sub);
-    % these are the same for all subjects
-    ses = 'nyu3t01'; 
-    task = 'prf';
     % setup the subject!
-    vista_path = fullfile('derivatives', 'vistasoft', ['sub-' sub], ['ses-' ses]);
+    vista_path = fullfile(bids_path, 'derivatives', 'vistasoft', ['sub-' subject], ['ses-' session]);
     if ~exist(vista_path, 'dir')
         try
-            bidsInitVista(base_path, sub, ses, task, 'preprocessed', vista_path);
+            bidsInitVista(bids_path, subject, session, task, 'preprocessed', vista_path, anatomyDir);
         catch err
-            warning('Error initializing vistasoft for %s / %s\n', sub, ses);
+            warning('Error initializing vistasoft for %s / %s\n', subject, session);
             rethrow(err);
-            continue;
         end
     end
-    cd(base_path);
+    cd(bids_path);
     % now solve the prfs
     try
-        solve_pRFs(base_path, sub, ses);
+        bids_solve_pRFs(bids_path, subject, session);
     catch err
-        warning('Error solving pRFs for %s / %s\n', sub, ses);
+        warning('Error solving pRFs for %s / %s\n', subject, session);
     end
-    fprintf('\n\n === Subjects %s complete ===\n\n', sub);
+    fprintf('\n\n === Subject %s complete ===\n\n', subject);
 end
-
-

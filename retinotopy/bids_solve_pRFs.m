@@ -1,4 +1,4 @@
-function solve_pRFs(projectPath, sub, ses, taskname, fsid, fssubdir)
+function bids_solve_pRFs(projectPath, sub, ses, taskname, fsidb, fssubdir)
 % solve_pRFs() averages the prf scans (with the given taskname, assumed to
 % be 'prf') for the given subject and session in the given BIDS project
 % directory.
@@ -25,11 +25,9 @@ try
 
     fprintf('Subject: %-12s  Session: %-20s\n', sub, ses);
 
-    % stim params and such should be in the vistasoft/shared directory
-    params_flnm = fullfile(wd, 'derivatives', 'vistasoft', 'shared', ...
-                           'scan_params.mat');
-    images_flnm = fullfile(wd, 'derivatives', 'vistasoft', 'shared', ...
-                           'scan_images.mat');
+    % stim params and such should be in MRI_tools/retinotopy/files directory
+    params_flnm = fullfile(path0, 'files', 'scan_params.mat');
+    images_flnm = fullfile(path0, 'files', 'scan_images.mat');
     if ~exist(params_flnm, 'file') || ~exist(images_flnm, 'file')
         error('Could not file params or images file');
     end
