@@ -15,8 +15,9 @@ else:
     shell.prefix("export SUBJECTS_DIR=%s; " % config["SUBJECTS_DIR"])
 
 
-SUBJECTS = ['sub-wlsubj081', 'sub-wlsubj095']
-SESSIONS = {'sub-wlsubj081': ['ses-01'],
+SUBJECTS = ['sub-wlsubj062', 'sub-wlsubj081', 'sub-wlsubj095']
+SESSIONS = {'sub-wlsubj062': ['ses-01'],
+            'sub-wlsubj081': ['ses-01'],
             'sub-wlsubj095': ['ses-01']}
 # if you have a different task than task-prf, insert it into here with a (subject, session) key,
 # e.g., ("sub-wlsubj001", "ses-01"): "task-example"
