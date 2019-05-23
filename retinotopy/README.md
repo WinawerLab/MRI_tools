@@ -118,6 +118,11 @@ jobs in parallel. By default, however, `snakemake` doesn't do anything
 clever and so you may run use up all your memory or cores, in which
 case it might throw an error. 
 
+NOTE: I use a bit of a hack to pre-process each run separately (to
+make it more efficient when parallelizing jobs), so if you're not
+running multiple jobs in parallel, this thing might take longer than
+you'd expect.
+
 ### On the cluster
 
 If you wish to run this on the `prince` cluster, clone and setup the
