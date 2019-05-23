@@ -1,4 +1,4 @@
-function bids_solve_pRFs(projectPath, sub, ses, taskname, fsidb, fssubdir)
+function bids_solve_pRFs(projectPath, sub, ses, taskname, fsidb, fssubdir, stim_dir)
 % solve_pRFs() averages the prf scans (with the given taskname, assumed to
 % be 'prf') for the given subject and session in the given BIDS project
 % directory.
@@ -20,14 +20,17 @@ try
     if ~exist('fssubdir', 'var') || isempty(fssubdir)
         fssubdir = getenv('SUBJECTS_DIR');
     end
+    if ~exist('stim_dir', 'var') || isempty(stim_dir)
+        stim_dir = fullfile(path0, 'files');
+    end
     assert(~isempty(fssubdir));
     assert(~isempty(fullfile(fssubdir, fsid)));
 
     fprintf('Subject: %-12s  Session: %-20s\n', sub, ses);
 
     % stim params and such should be in MRI_tools/retinotopy/files directory
-    params_flnm = fullfile(path0, 'files', 'scan_params.mat');
-    images_flnm = fullfile(path0, 'files', 'scan_images.mat');
+    params_flnm = fullfile(stim_dir, 'scan_params.mat');
+    images_flnm = fullfile(stim_dir, 'scan_images.mat');
     if ~exist(params_flnm, 'file') || ~exist(images_flnm, 'file')
         error('Could not file params or images file');
     end
