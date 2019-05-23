@@ -1,16 +1,16 @@
-function bids_solve_pRFs(projectPath, sub, ses, taskname, fsidb, fssubdir, stim_dir)
+function bids_solve_pRFs(projectPath, subject, session, task, fsid, fssubdir, stim_dir)
 % solve_pRFs() averages the prf scans (with the given taskname, assumed to
 % be 'prf') for the given subject and session in the given BIDS project
 % directory.
 
 path0 = pwd();
-ssub = sprintf('sub-%s', sub);
-sses = sprintf('ses-%s', ses);
+ssub = sprintf('sub-%s', subject);
+sses = sprintf('ses-%s', session);
 cd(projectPath);
 try
     wd = pwd();
     
-    dataset_name = 'prf';
+    dataset_name = task;
     session_path = fullfile('derivatives', 'vistasoft', ssub, sses);
     output_path  = fullfile(session_path, 'Gray', dataset_name);
     assert(exist(session_path, 'dir') ~= 0);
@@ -26,7 +26,7 @@ try
     assert(~isempty(fssubdir));
     assert(~isempty(fullfile(fssubdir, fsid)));
 
-    fprintf('Subject: %-12s  Session: %-20s\n', sub, ses);
+    fprintf('Subject: %-12s  Session: %-20s\n', subject, session);
 
     % stim params and such should be in MRI_tools/retinotopy/files directory
     params_flnm = fullfile(stim_dir, 'scan_params.mat');
