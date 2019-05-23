@@ -9,6 +9,33 @@ TESLA_DIR: "/mnt/Tesla/color_retinotopy"
 SUBJECTS_DIR: "/users/broderick/mnt/winawerlab/Freesurfer_subjects/"
 # directory on Tesla containing extracted anatomy data, which has had
 # freesurfer run on it
-ANATOMY_DIR: "/mnt/Tesla/Anatomy"
+TESLA_ANATOMY_DIR: "/mnt/Tesla/Anatomy"
 # directory that contains the vistasoft matlab toolbox
 VISTASOFT_DIR: "/users/broderick/Documents/MATLAB/toolboxes/vistasoft"
+# the directory for the Anatomy project on the winawerlab server
+ANATOMY_DIR: "/users/broderick/mnt/winawerlab/Anatomy"
+
+# List of subjects to analyze
+SUBJECTS:
+  - 'sub-wlsubj062'
+  - 'sub-wlsubj081'
+  - 'sub-wlsubj095'
+# sessions for each subject (note these need to be lists)
+SESSIONS:
+  sub-wlsubj062 :
+    - ses-01
+  sub-wlsubj081 :
+    - ses-01
+  sub-wlsubj095 :
+    - ses-01
+# if you have a different task than task-prf, insert it here with as a
+# nested subject : session key, like this example
+TASKS:
+  sub-example:
+    ses-01:
+      task-example
+# every subject/session pair that's not in here has 6 runs
+NRUNS:
+  sub-example:
+    ses-01:
+      9

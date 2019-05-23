@@ -1,0 +1,20 @@
+{
+    "__default__":
+    {
+	"nodes": 1,
+	"tasks_per_node": 1,
+	"mem": "48GB",
+	"time": "12:00:00",
+	"job_name": "{rule}.{wildcards}",
+	"cpus_per_task": 1,
+	"output": "{log}",
+	"error": "{log}"
+    },
+    "preprocess":
+    {
+	"time": "00:45:00",
+	"mem": "{resources.mem}GB",
+	"cpus_per_task": "{resources.cpus_per_task}"
+    }
+}
+   
