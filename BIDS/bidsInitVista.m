@@ -64,7 +64,7 @@ function bidsInitVista(projectDir, subject, session, tasks,... % runnums,
     
     % <anatomyDir>
     if ~exist('anatomyDir', 'var') || isempty(anatomyDir)
-        anatomyDir = fullfile('/Volumes', 'server', 'Projects', 'Anatomy')
+        anatomyDir = fullfile('/Volumes', 'server', 'Projects', 'Anatomy');
     end
     if ~exist(analysisDir, 'dir'), mkdir(analysisDir); end
     cd(analysisDir);
