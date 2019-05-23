@@ -53,7 +53,7 @@ function bidsInitVista(projectDir, subject, session, tasks,... % runnums,
     end
     dataPath = fullfile (projectDir,'derivatives', dataFolder,...
                          sprintf('sub-%s',subject), sprintf('ses-%s',session));
-    assert(boolean(exist(dataPath, 'dir')))
+    assert(logical(exist(dataPath, 'dir')))
 
     % <Analysis folder>
     if ~exist('analysisDir', 'var') || isempty(analysisDir)
