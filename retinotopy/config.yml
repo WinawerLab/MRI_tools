@@ -1,13 +1,14 @@
 # the BIDS directory containing retinotopy information
-DATA_DIR: "/mnt/winawerlab/Projects/Retinotopy/BIDS"
+DATA_DIR: "/users/broderick/mnt/winawerlab/Projects/Retinotopy/BIDS"
 # temporary directory to save preprocess working directory; will
 # delete once finished
 WORKING_DIR: "/users-local/broderick/preprocess"
 # directory on Tesla where you extracted retinotopy data
 TESLA_DIR: "/mnt/Tesla/color_retinotopy"
 # Freesurfer subjects directory
-SUBJECTS_DIR: "/mnt/winawerlab/Freesurfer_subjects/"
+SUBJECTS_DIR: "/users/broderick/mnt/winawerlab/Freesurfer_subjects/"
 # directory on Tesla containing extracted anatomy data, which has had
 # freesurfer run on it
 ANATOMY_DIR: "/mnt/Tesla/Anatomy"
-
+# directory that contains the vistasoft matlab toolbox
+VISTASOFT_DIR: "/users/broderick/Documents/MATLAB/toolboxes/vistasoft"
