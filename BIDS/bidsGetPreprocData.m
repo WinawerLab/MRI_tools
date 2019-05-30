@@ -1,12 +1,10 @@
-function [data, info, fullFile] = bidsGetPreprocData(dataPath, tasks, runnums, usePreproc)
+function [data, info, fullFile] = bidsGetPreprocData(dataPath, dataStr, tasks, runnums)
 %
 % Inputs
 %   dataPath:   path to folder containing preprocessed data
+%   dataStr:    text string to specify filename for data 
 %   tasks:      BIDS tasks, in cell array
 %   runnums:    cell array of runnumbers, equal in length to tasks
-%   usePreproc: boolean: if true, use preprocessed data from derivatives
-%                       folder, else use data from func folder
-%                       default: true
 %
 % Output
 %   data:       the time-series data for each run with dimensions
@@ -16,9 +14,6 @@ function [data, info, fullFile] = bidsGetPreprocData(dataPath, tasks, runnums, u
 %
 % Example: 
 
-if ~exist('usePreproc', 'var') || isempty(usePreproc)
-    usePreproc = true;
-end
 
 numruns = sum(cellfun(@numel, runnums));
 
@@ -32,17 +27,11 @@ for ii = 1:length(tasks)
         fprintf('.')
         
         % we want to check for both 0-padded and non-0-padded versions...
-        if usePreproc
-            fnamePrefix  = sprintf('*_task-%s*run-%d_preproc*',...
-                tasks{ii},runnums{ii}(jj));
-            fnamePrefixZeroPad = sprintf('*_task-%s*run-%02d_preproc*',...
-                tasks{ii},runnums{ii}(jj));
-        else
-            fnamePrefix  = sprintf('*_task-%s*run-%d_bold*',...
-                tasks{ii},runnums{ii}(jj));
-            fnamePrefixZeroPad = sprintf('*_task-%s*run-%02d_bold*',...
-                tasks{ii},runnums{ii}(jj));
-        end
+        fnamePrefix  = sprintf('*_task-%s*run-%d_*%s*',...
+            tasks{ii},runnums{ii}(jj), dataStr);
+        fnamePrefixZeroPad = sprintf('*_task-%s*run-%02d_*%s*',...
+            tasks{ii},runnums{ii}(jj), dataStr);
+        
 
         fname = dir(fullfile(dataPath, fnamePrefix));
         % we only need to check both if they're different; if we're
@@ -51,6 +40,11 @@ for ii = 1:length(tasks)
         if ~strcmp(fnamePrefix, fnamePrefixZeroPad)
             fname = [fname; dir(fullfile(dataPath, fnamePrefixZeroPad))];
         end
+        
+        % We want brain images, not text files, so remove json/tsv files
+        istxt = contains({fname.name}, {'.json', '.tsv'});
+        fname = fname(~istxt);
+        
         % This guarantees that we found at least one
         assert(~isempty(fname));
         
@@ -83,4 +77,3 @@ for ii = 1:length(tasks)
     end
 end
 fprintf('\n')
-end

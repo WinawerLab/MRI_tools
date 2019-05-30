@@ -1,5 +1,5 @@
 function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
-        dataFolder, designFolder, stimdur, modelType, glmOptsPath, tr)
+        dataFolder, dataStr, designFolder, stimdur, modelType, glmOptsPath, tr)
 %
 % results = bidsGLM(projectDir, subject, [session], [tasks], [runnums], ...
 %        [dataFolder], [designFolder], [modelType], [stimdur], [glmOptsPath], [tr]);
@@ -27,6 +27,8 @@ function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
 %                           files of the form
 %                               <subject>/<session>/*.nii
 %                           default: 'preprocessed'
+%     dataStr:          text string to specify filename for data 
+%                           default: 'bold';
 %     designFolder:     folder name containing design matrices for glmDenoise
 %                           This specifies that the design matrices
 %                           for each subject reside in
@@ -168,6 +170,7 @@ if ~exist('session', 'var'),     session = [];      end
 if ~exist('tasks', 'var'),       tasks   = [];      end
 if ~exist('runnums', 'var'),     runnums  = [];     end
 if ~exist('glmOptsPath', 'var'), glmOptsPath = [];  end
+if ~exist('dataStr', 'var'),     dataStr = 'bold';  end
 
 [session, tasks, runnums] = bidsSpecifyEPIs(projectDir, subject,...
     session, tasks, runnums);
@@ -179,6 +182,9 @@ if ~exist('dataFolder', 'var') || isempty(dataFolder)
 end
 dataPath = fullfile (projectDir,'derivatives', dataFolder,...
     sprintf('sub-%s',subject), sprintf('ses-%s',session));
+if exist(fullfile(dataPath, 'func'), 'dir')
+    dataPath = fullfile (dataPath, 'func');
+end
 rawDataPath = fullfile(projectDir, sprintf('sub-%s', subject), ...
     sprintf('ses-%s', session), 'func');
 
@@ -203,7 +209,7 @@ end
 design = getDesign(designPath, tasks, runnums);
 
 % <data>
-data = bidsGetPreprocData(dataPath, tasks, runnums);
+data = bidsGetPreprocData(dataPath, dataStr, tasks, runnums);
 
 % <tr>
 if ~exist('tr', 'var') || isempty(tr)

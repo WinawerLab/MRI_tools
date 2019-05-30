@@ -26,7 +26,7 @@ for ii = 1:length(tasks)
             jsonName    = [jsonName ;dir(fullfile(rawDataPath, jsonPrefixZeroPad))];
         end
          % This guarantees that we found at least one
-        assert(~isempty(fname));
+        assert(~isempty(jsonName));
         
         json        = fileread(fullfile (rawDataPath, jsonName.name));
         jsonInfo    = jsondecode(json);
