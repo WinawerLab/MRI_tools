@@ -29,7 +29,8 @@ SESSIONS:
   sub-wlsubj095 :
     - ses-01
 # if you have a different task than task-prf, insert it here with as a
-# nested subject : session key, like this example
+# nested subject : session key, like this example. Importantly, we can
+# only have one task per session!
 TASKS:
   sub-example:
     ses-01:
