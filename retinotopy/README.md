@@ -126,6 +126,11 @@ in parallel on the cluster (see next section), where you won't have
 this issue, once you've gotten past the matlab steps, or when you're
 certain that you won't hit any sort of exception.
 
+NOTE: I use a bit of a hack to pre-process each run separately (to
+make it more efficient when parallelizing jobs), so if you're not
+running multiple jobs in parallel, this thing might take longer than
+you'd expect.
+
 ### On the cluster
 
 If you wish to run this on the `prince` cluster, clone and setup the

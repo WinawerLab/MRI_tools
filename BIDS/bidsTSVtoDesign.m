@@ -1,4 +1,4 @@
-function design = bidsTSVtoDesign(projectDir, subject, session, tasks, runnum, designFolder, tr, dataFolder)
+function design = bidsTSVtoDesign(projectDir, subject, session, tasks, runnum, designFolder, tr, dataFolder, dataStr)
 %Convert tsv files from BIDS directory to design matrices for GLM
 % design = bidsTSVtoDesign(projectDir, subject, [session], [tasks], [runnum], [designFolder])
 %
@@ -21,6 +21,9 @@ function design = bidsTSVtoDesign(projectDir, subject, session, tasks, runnum, d
 %                           default = TR from json file for fMRI scan
 %     dataFolder        path to folder with data to use for GLM
 %                           default = [], which means use the original EPIs
+%     dataStr:          text string to specify filename for data 
+%                           default: 'bold';
+%
 %
 % Output
 %     design:           Matrix or cell array of matrices, time by condition
@@ -48,8 +51,9 @@ function design = bidsTSVtoDesign(projectDir, subject, session, tasks, runnum, d
 if ~exist('session', 'var'),    session = [];   end
 if ~exist('tasks', 'var'),      tasks   = [];   end
 if ~exist('runnum', 'var'),     runnum  = [];   end
-if exist('dataFolder', 'var') && ~isempty(dataFolder), usePreproc = true;
+if  exist('dataFolder', 'var') && ~isempty(dataFolder), usePreproc = true;
 else, usePreproc = false; end
+if ~exist('dataStr', 'var'),    dataStr = 'bold'; end
 
 [session, tasks, runnum] = bidsSpecifyEPIs(projectDir, subject,...
     session, tasks, runnum);
@@ -96,7 +100,7 @@ for ii = 1:length(tasks)
         end
         
         % Numvol (or numrows in design matrix)
-        [~, hdr] = bidsGetPreprocData(datapath, tasks(ii), {runnum{ii}(jj)}, usePreproc);
+        [~, hdr] = bidsGetPreprocData(datapath, dataStr, tasks(ii), {runnum{ii}(jj)});
         numvol(scan) = hdr{1}.ImageSize(end);      
             
         % TSV
