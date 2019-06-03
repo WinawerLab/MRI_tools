@@ -116,7 +116,15 @@ snakemake -rpk {BIDS_dir}/derivatives/vistasoft/{subject}/{session}/Outputs/lh.i
 You can also add `-j N`, where `N` is some number, in order to run N
 jobs in parallel. By default, however, `snakemake` doesn't do anything
 clever and so you may run use up all your memory or cores, in which
-case it might throw an error. 
+case it might throw an error. Also, if an exception happens while
+running one of the matlab jobs, *matlab will not quit*. This will make
+things very difficult when running in parallel, because you'll be
+stuck in the matlab interpreter for one job while the other jobs are
+going in the background and this will make it hard to type
+coherently. Therefore, it's recommended you either only run the jobs
+in parallel on the cluster (see next section), where you won't have
+this issue, once you've gotten past the matlab steps, or when you're
+certain that you won't hit any sort of exception.
 
 ### On the cluster
 
