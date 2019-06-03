@@ -206,10 +206,20 @@ rule vistasoft_anat:
 
 rule solve_prfs:
     input:
-        lambda wildcards: [os.path.join(config['DATA_DIR'], "derivatives", "preprocessed",  "{subject}", "{session}", "{subject}_{session}_task-{task}_run-{run:02d}_preproc.nii.gz").format(run=n, **wildcards) for n in range(1, config['NRUNS'].get(wildcards.subject, {}).get(wildcards.session, 6)+1)],
+        lambda wildcards: [os.path.join(config['DATA_DIR'], "derivatives", "preprocessed",  "{subject}",
+                                        "{session}", "{subject}_{session}_task-{task}_run-{run:02d}_preproc.nii.gz").format(run=n, **wildcards)
+                           for n in range(1, config['NRUNS'].get(wildcards.subject, {}).get(wildcards.session, 6)+1)],
         os.path.join(config["DATA_DIR"], "derivatives", "vistasoft", "{subject}", "{session}", "3DAnatomy", "t1_class.nii.gz"),
     output:
         os.path.join(config["DATA_DIR"], "derivatives", "vistasoft", "{subject}", "{session}", "Gray", "{task}", "rm_{task}-fFit.mat"),
+        os.path.join(config["DATA_DIR"], "derivatives", "vistasoft", "{subject}", "{session}", "Gray", "{task}", "rm_{task}-sFit.mat"),
+        os.path.join(config["DATA_DIR"], "derivatives", "vistasoft", "{subject}", "{session}", "Gray", "{task}", "rm_{task}-gFit.mat"),
+        os.path.join(config["DATA_DIR"], "derivatives", "vistasoft", "{subject}", "{session}", "Gray", "{task}", "sigma.nii.gz"),
+        os.path.join(config["DATA_DIR"], "derivatives", "vistasoft", "{subject}", "{session}", "Gray", "{task}", "vexpl.nii.gz"),
+        os.path.join(config["DATA_DIR"], "derivatives", "vistasoft", "{subject}", "{session}", "Gray", "{task}", "xcrds.nii.gz"),
+        os.path.join(config["DATA_DIR"], "derivatives", "vistasoft", "{subject}", "{session}", "Gray", "{task}", "ycrds.nii.gz"),
+        os.path.join(config["DATA_DIR"], "derivatives", "vistasoft", "{subject}", "{session}", "Gray", "{task}", "TSeries", "Scan1", "tSeries1.mat"),
+        os.path.join(config["DATA_DIR"], "derivatives", "vistasoft", "{subject}", "{session}", "Inplane", "{task}", "TSeries", "tSeriesScan1.nii.gz"),
     benchmark:
         os.path.join(config['DATA_DIR'], 'code', 'solve_prfs', '{subject}_{session}_task-{task}_benchmark.txt')
     log:

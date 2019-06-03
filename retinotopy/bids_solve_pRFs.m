@@ -15,7 +15,7 @@ try
     output_path  = fullfile(session_path, 'Gray', dataset_name);
     assert(exist(session_path, 'dir') ~= 0);
 
-    if ~exist('fsid', 'var') || isempty(fsid), fsid = sub; end
+    if ~exist('fsid', 'var') || isempty(fsid), fsid = subject; end
     assert(~isempty(fsid));
     if ~exist('fssubdir', 'var') || isempty(fssubdir)
         fssubdir = getenv('SUBJECTS_DIR');
@@ -32,7 +32,7 @@ try
     params_flnm = fullfile(stim_dir, 'scan_params.mat');
     images_flnm = fullfile(stim_dir, 'scan_images.mat');
     if ~exist(params_flnm, 'file') || ~exist(images_flnm, 'file')
-        error('Could not file params or images file');
+        error(sprintf('Could not file params or images file in %s', stim_dir));
     end
 
     %% Navigate and initialize session

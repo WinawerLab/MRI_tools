@@ -23,10 +23,10 @@ function bids_retinotopy(bids_path, subject, session, task, anatomyDir, stim_dir
 
     % setup the subject!
     vista_path = fullfile(bids_path, 'derivatives', 'vistasoft', ['sub-' subject], ['ses-' session]);
-    if ~exist(vista_path, 'dir')
+    if ~exist(fullfile(vista_path, 'mrInit_params.mat'), 'file')
         bidsInitVista(bids_path, subject, session, task, 'preprocessed', vista_path, anatomyDir);
     end
     % now solve the prfs
-    bids_solve_pRFs(bids_path, subject, session, stim_dir);
+    bids_solve_pRFs(bids_path, subject, session, task, [], [], stim_dir);
     fprintf('\n\n === Subject %s complete ===\n\n', subject);
 end
