@@ -53,22 +53,25 @@ function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
 %     
 %
 % Example 1
-%     projectDir        = '/Volumes/server/Projects/BAIR/Data/BIDS/visual'; 
-%     subject           = 'wlsubj054';
-%     session           = 'nyu3t01';
-%     tasks             = 'spatialobject';
+%     projectDir        = '/Volumes/server/Projects/BAIR/Data/BIDS/visual_BIDS_compatible'; 
+%     subject           = 'umcuchaam';
+%     session           = 'umcu3tday139';
+%     tasks             = 'temporalpattern';
 %     runnums           = 1:4;
-%     dataFolder        = 'preprocessed';                 
-%     designFolder      = 'spatialobjectRoundedTR';
+%     dataFolder        = 'fmriprep'; 
+%     dataStr           = 'fsnative';
+%     designFolder      = 'temporalpattern';
 %     stimdur           = 0.5;
-%     modelType         = 'spatialObjectRoundedTR';
-%     glmOptsPath       = [];        
+%     modelType         = 'temporalpatternRoundedTR';
+%     glmOptsPath       = [];    
+%     tr                = [];
 %       
 %     % make the design matrices
 %     bidsTSVtoDesign(projectDir, subject, session, tasks, runnums, designFolder);
 %     % run the GLM
 %     bidsGLM(projectDir, subject, session, tasks, runnums, ...
-%        dataFolder, designFolder, stimdur, modelType, glmOptsPath);
+%         dataFolder, dataStr, designFolder, stimdur, modelType, glmOptsPath, tr)
+%
 %
 % Example 2
 %     projectDir        = '/Volumes/server/Projects/BAIR/Data/BIDS/visual'; 
