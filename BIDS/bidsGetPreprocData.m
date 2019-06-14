@@ -63,18 +63,19 @@ for ii = 1:length(tasks)
                 hemis = {'lh', 'rh'};
                 for ll = 1: length (hemis)
                     % We index to make sure the order is always the same
-                    idx = contains ({fname.name} , hemis{ll});
+                    idx = contains ({fname.name} , hemis{ll}, 'IgnoreCase', true);
                     tempData(ll) = MRIread(fullfile (dataPath, fname(idx).name));
                 end
                 fullFile{scan}= [];
-                data{scan}    = cat(2,tempData(1).vol, tempData(2).vol);
-                info{scan}    = rmfield(tempData(1), 'vol');
+                data{scan}           = cat(2,tempData(1).vol, tempData(2).vol);
+                info{scan}           = rmfield(tempData(1), 'vol');
+                info{scan}.ImageSize = size(tempData(1).vol);
             case '.gii'
                 assert(length(fname) == 2);
                 hemis = {'L', 'R'};
                 for ll = 1: length (hemis)
                     % We index to make sure the order is always the same
-                    idx = contains ({fname.name} , hemis{ll});
+                    idx = contains ({fname.name} , sprintf('hemi-%s',hemis{ll}));
                     tempData{ll} = gifti(fullfile (dataPath, fname(idx).name));
                 end
                 fullFile{scan}= [];
