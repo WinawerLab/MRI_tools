@@ -22,7 +22,7 @@ for ii = 1:length(tasks)
         jsonPrefix        = sprintf('*_task-%s*run-%d_bold.json',tasks{ii}, runnums{ii}(jj));
         jsonPrefixZeroPad = sprintf('*_task-%s*run-%02d_bold.json',tasks{ii}, runnums{ii}(jj));
         jsonName          = dir(fullfile(rawDataPath, jsonPrefix));
-        if  ~strcmp(jsonName,jsonPrefixZeroPad)
+        if  ~strcmp(jsonPrefix,jsonPrefixZeroPad)
             jsonName    = [jsonName ;dir(fullfile(rawDataPath, jsonPrefixZeroPad))];
         end
          % This guarantees that we found at least one
