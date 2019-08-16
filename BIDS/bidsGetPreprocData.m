@@ -61,6 +61,7 @@ for ii = 1:length(tasks)
                 % if they're surfaces, there should be two of them
                 assert(length(fname) == 2);
                 hemis = {'lh', 'rh'};
+                hemis = {'hemi-L', 'hemi-R'};
                 for ll = 1: length (hemis)
                     % We index to make sure the order is always the same
                     idx = contains ({fname.name} , hemis{ll}, 'IgnoreCase', true);
