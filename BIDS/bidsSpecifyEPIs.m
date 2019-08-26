@@ -1,4 +1,4 @@
-function [session, tasks, runnum] = bidsSpecifyEPIs(projectDir, subject,...
+function [session, tasks, runnum, siteModality] = bidsSpecifyEPIs(projectDir, subject,...
     session, tasks, runnum)
 % Specify tasks and run numbers and verify paths for BIDS session
 % [session, tasks, runnum] = bidsSpecifyEPIs(projectDir, subject, [session], [tasks], [runnum])
@@ -54,28 +54,47 @@ end
 sessionDir = fullfile(subjectDir, sprintf('ses-%s', session));
 
 % <tasks>
+% MRI and MEG data will have different BIDS formatting, so figure out which
+% we're doing. 
 if ~exist('tasks', 'var') || isempty(tasks)
     d = dir(fullfile(sessionDir, 'func', '*bold.nii*'));
-    
+    siteModality = 'mri';
+    if isempty (d)
+        d = dir(fullfile(sessionDir, 'meg', '*meg.sqd'));
+        siteModality = 'meg';
+        if isempty (d)
+            d = dir(fullfile(sessionDir, 'ieeg', '*ieeg.eeg'));
+            siteModality = 'ecog';
+        end
+    end
     taskname = cell(1,length(d));
     for ii = 1:length(d)
-       taskname{ii} = bidsGet(d(ii).name, 'task');
+        taskname{ii} = bidsGet(d(ii).name, 'task');
     end
-    tasks = unique(taskname);       
+    tasks = unique(taskname);
 end
 if ~iscell(tasks), tasks = {tasks}; end
 
 % <runnum>
 if ~exist('runnum', 'var') || isempty(runnum)
-         
+    
     runnum = cell(1,length(tasks));
     for ii = 1:length(tasks)
-       files = dir(fullfile(sessionDir, 'func', sprintf('*task-%s_*bold.nii*', tasks{ii})));
-       for jj = 1:length(files)
-           runnum{ii}(jj) = str2double(bidsGet(files(jj).name, 'run'));
-       end       
+        files = dir(fullfile(sessionDir, 'func', sprintf('*task-%s_*bold.nii*', tasks{ii})));
+        siteModality = 'mri';
+        if isempty (files)
+            files = dir(fullfile(sessionDir, 'meg', sprintf('*task-%s_*meg.sqd', tasks{ii})));
+            siteModality = 'meg';
+            if isempty (files)
+                files = dir(fullfile(sessionDir, 'ieeg', sprintf('*task-%s_*ieeg.eeg', tasks{ii})));
+                siteModality = 'ecog';
+            end
+        end
+        for jj = 1:length(files)
+            runnum{ii}(jj) = str2double(bidsGet(files(jj).name, 'run'));
+        end
     end
-          
+    
 end
 if ~iscell(runnum), runnum = {runnum}; end
 

@@ -1,8 +1,8 @@
-function [data, info, fullFile] = bidsGetPreprocData(dataPath, dataStr, tasks, runnums)
+function [data, info, fullDatafile] = bidsGetPreprocData(dataPath, dataStr, tasks, runnums)
 %
 % Inputs
 %   dataPath:   path to folder containing preprocessed data
-%   dataStr:    text string to specify filename for data 
+%   dataStr:    text string to specify filename for data
 %   tasks:      BIDS tasks, in cell array
 %   runnums:    cell array of runnumbers, equal in length to tasks
 %
@@ -10,9 +10,9 @@ function [data, info, fullFile] = bidsGetPreprocData(dataPath, dataStr, tasks, r
 %   data:       the time-series data for each run with dimensions
 %                X x Y x Z x time
 %   info:       nifti header for each run
-%   fullFile:   The (nifti) time-series data including header information 
+%   fullFile:   The (nifti) time-series data including header information
 %
-% Example: 
+% Example:
 
 
 numruns = sum(cellfun(@numel, runnums));
@@ -32,7 +32,7 @@ for ii = 1:length(tasks)
         fnamePrefixZeroPad = sprintf('*_task-%s*run-%02d_*%s*',...
             tasks{ii},runnums{ii}(jj), dataStr);
         
-
+        
         fname = dir(fullfile(dataPath, fnamePrefix));
         % we only need to check both if they're different; if we're
         % looking at run 10, 0-padded and non-0-padded will be the
@@ -44,7 +44,7 @@ for ii = 1:length(tasks)
         % We want brain images, not text files, so remove json/tsv files
         istxt = contains({fname.name}, {'.json', '.tsv'});
         fname = fname(~istxt);
-             
+        
         % This guarantees that we found at least one
         assert(~isempty(fname));
         
@@ -54,19 +54,19 @@ for ii = 1:length(tasks)
                 % if these are niftis, then there should only be
                 % one file
                 assert(length(fname) == 1);
-                fullFile{scan}= niftiRead(fullfile (dataPath, fname.name));
-                data{scan}    = fullFile{scan}.data; 
+                fullDatafile{scan}= niftiRead(fullfile (dataPath, fname.name));
+                data{scan}    = fullDatafile{scan}.data;
                 info{scan}    = niftiinfo(fullfile (dataPath, fname.name));
             case '.mgz'
                 % if they're surfaces, there should be two of them
-                assert(length(fname) == 2);                
+                assert(length(fname) == 2);
                 hemis = {'hemi-L', 'hemi-R'}; % hemis = {'lh', 'rh'};
                 for ll = 1: length (hemis)
                     % We index to make sure the order is always the same
                     idx = contains ({fname.name} , hemis{ll}, 'IgnoreCase', true);
                     tempData(ll) = MRIread(fullfile (dataPath, fname(idx).name));
                 end
-                fullFile{scan}= [];
+                fullDatafile{scan}= [];
                 data{scan}           = cat(2,tempData(1).vol, tempData(2).vol);
                 info{scan}           = rmfield(tempData(1), 'vol');
                 info{scan}.ImageSize = size(tempData(1).vol);
@@ -78,8 +78,12 @@ for ii = 1:length(tasks)
                     idx = contains ({fname.name} , sprintf('hemi-%s',hemis{ll}));
                     tempData{ll} = gifti(fullfile (dataPath, fname(idx).name));
                 end
-                fullFile{scan}= [];
+                fullDatafile{scan}= [];
                 data{scan}    = cat(1,tempData{1}.cdata, tempData{2}.cdata);
+            case {'.sqd', '.eeg'}
+                data{scan}    = ft_read_data(fullfile (dataPath, fname.name));
+                info{scan}    = ft_read_header(fullfile (dataPath, fname.name));
+                fullDatafile{scan}= [];
             otherwise
                 error('Unrecognized file format %s', ext)
         end

@@ -2,7 +2,7 @@ function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
         dataFolder, dataStr, designFolder, stimdur, modelType, glmOptsPath, tr)
 %
 % results = bidsGLM(projectDir, subject, [session], [tasks], [runnums], ...
-%        [dataFolder], [designFolder], [modelType], [stimdur], [glmOptsPath], [tr]);
+%        [dataFolder], [dataStr], [designFolder],[stimdur], [modelType],[glmOptsPath], [tr]);
 %
 % Input
 %
@@ -63,8 +63,8 @@ function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
 %     designFolder      = 'temporalpattern';
 %     stimdur           = 0.5;
 %     modelType         = 'temporalpatternRoundedTR';
-%     glmOptsPath       = [];    
-%     tr                = [];
+%     glmOptsPath       = '~/matlab/toolboxes/BAIRanalysis/files/glmOpts.json';    
+%     tr                = .85;
 %       
 %     % make the design matrices
 %     bidsTSVtoDesign(projectDir, subject, session, tasks, runnums, designFolder);
@@ -72,44 +72,28 @@ function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
 %     bidsGLM(projectDir, subject, session, tasks, runnums, ...
 %         dataFolder, dataStr, designFolder, stimdur, modelType, glmOptsPath, tr)
 %
-%
 % Example 2
-%     projectDir        = '/Volumes/server/Projects/BAIR/Data/BIDS/visual'; 
-%     subject           = 'wlsubj054';
-%     tasks             = 'spatialobject';
-%     runnums           = 1:2;
-%     dataFolder        = 'preprocessed';                 
-%     designFolder      = 'spatialObjectAssumeHRF';
-%     glmOptsPath       = '~/matlab/toolboxes/BAIRanalysis/files/glmOpts.json';        
-%       
-%     % make the design matrices
-%     bidsTSVtoDesign(projectDir, subject, [], tasks, runnums, designFolder);
-%     % run the GLM
-%     bidsGLM(projectDir, subject, [], tasks, runnums, ...
-%        dataFolder, designFolder, [], [], glmOptsPath);
-%   See also bidsTSVtoDesign
-%
-% Example 3
 %   Two step GLM: (1) optimze the hRF from an hrf-specific scan, then use the
 %           optimzed hRF for denoising other scan types
 % 
 %     projectDir        = '/Volumes/server/Projects/BAIR/Data/BIDS/visual';
-%     subject           = 'wlsubj048';
+%     subject           = 'wlsubj051';
 %     session           = 'nyu3t01';
-%     tasks             = 'hrf';
+%     tasks             = 'hrfpattern';
 %     runnums           = [];
-%     dataFolder        = 'preprocessed';
+%     dataFolder        = 'fmriprep';
+%     dataStr           = 'fsnative';
 %     designFolder      = 'hrfRoundedTROptimize';
 %     stimdur           = 0.5;
-%     modelType         = [];
+%     modelType         = 'hrfRoundedTROptimize';
 %     glmOptsPath       = 'glmOptsOptimize.json';
 % 
 %     % FIRST GLM
 %     % make the design matrices
 %     bidsTSVtoDesign(projectDir, subject, session, tasks, runnums, designFolder);
 %     % run it
-%     results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
-%         dataFolder, designFolder, stimdur, modelType, glmOptsPath);
+%     bidsGLM(projectDir, subject, session, tasks, runnums, ...
+%         dataFolder, dataStr, designFolder, stimdur, modelType, glmOptsPath)
 %     % look at the hrf
 %     figure, plot(results.models{1})
 % 
@@ -125,48 +109,30 @@ function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
 % 
 %     bidsTSVtoDesign(projectDir, subject, session, tasks, runnums, designFolder);
 %     % run it
-%     results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
-%         dataFolder, designFolder, stimdur, modelType, glmOptsPath);
-%
-% % Example 4
-%   Two step GLM with upsampled and slice-time-corrected data/design matrices: 
+%     bidsGLM(projectDir, subject, session, tasks, runnums, ...
+%         dataFolder, dataStr, designFolder, stimdur, modelType, glmOptsPath)
+% Example 3
+%    GLM with temporally upsampled data/design matrices: 
 % 
 %     projectDir        = '/Volumes/server/Projects/BAIR/Data/BIDS/visual';
-%     subject           = 'wlsubj048';
-%     session           = 'nyu3t01';
-%     tasks             = {'hrf' 'spatialobject' 'spatialpattern' 'temporalpattern'};
+%     subject           = 'wlsubj051';
+%     session           = [];
+%     tasks             = {'spatialobject' 'spatialpattern' 'temporalpattern'};
 %     runnums           = [];
-%     dataFolder        = 'preprocessedUpsampled';
-%     designFolder      = 'preprocessedUpsampled';
-%     stimdur           = 0.5;
+%     dataFolder        = 'threeTasksUpsampled';
+%     designFolder      = 'threeTasksUpsampled';
+%     stimdur           = [];
 %     modelType         = [];
 %     tr                = .85/5 ; % original data upsampled by 5x
+%     glmOptsPath       = [];
+%     dataStr           = 'fsnative';
 %
 %     % make the design matrices
 %     bidsTSVtoDesign(projectDir, subject, session, tasks, runnums, designFolder, tr, dataFolder);
 %
-%     % FIRST GLM
-%     glmOptsPath       = 'glmOptsOptimize.json';
-%     tasks             = {'hrf'};
-%     % run it
-%     results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
-%         dataFolder, designFolder, stimdur, modelType, glmOptsPath, tr);
-%     % look at the hrf
-%     figure, plot(results.models{1})
-% 
-%     % SECOND GLM
-%     tasks             = {'spatialobject' 'spatialpattern' 'temporalpattern'};
-%     runnums           = [];
-%     glmOptsPath       = 'glmOptsAssume.json';
-%     json = jsondecode(fileread(glmOptsPath));
-%     json.hrfknobs     = results.models{1};
-%     glmOptsPath       = fullfile(tempdir,glmOptsPath);
-%     savejson('', json, 'FileName', glmOptsPath);
-% 
-%     % run it
-%     results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
-%         dataFolder, designFolder, stimdur, modelType, glmOptsPath, tr);
-
+%     bidsGLM(projectDir, subject, session, tasks, runnums, ...
+%       dataFolder, dataStr, designFolder, stimdur, modelType, glmOptsPath, tr)
+%
 %% Check inputs
 
 if ~exist('session', 'var'),     session = [];      end
@@ -177,7 +143,6 @@ if ~exist('dataStr', 'var'),     dataStr = 'bold';  end
 
 [session, tasks, runnums] = bidsSpecifyEPIs(projectDir, subject,...
     session, tasks, runnums);
-
 
 % <dataFolder>
 if ~exist('dataFolder', 'var') || isempty(dataFolder)
@@ -247,7 +212,7 @@ if ~exist(figuredir, 'dir'); mkdir(figuredir); end
 % GLMestimatemodel rather than GLMdenoisedata
 
 preds=cell2mat(cellfun(@(x) sum(x)>0, design, 'UniformOutput', false)');
-if any(prod(preds)), xval = true; else, xval = false; end
+if any(sum(preds)), xval = true; else, xval = false; end
 if length(design) == 1, xval = false; end
 
 if xval
