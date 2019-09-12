@@ -55,7 +55,7 @@ function results = bidsAnalyzePRF(projectDir, subject, session, tasks, runnums, 
 %     tasks             = 'prf';
 %     runnums           = 1:2;
 %     dataFolder        = 'fmriprep'; 
-%     dataStr           = 'fsnative';
+%     dataStr           = 'fsnative*.mgz';
 %     apertureFolder    = [];
 %     prfOptsPath       = [];    
 %     tr                = [];
@@ -124,8 +124,10 @@ end
 
 %****** Optional inputs to analyzePRF *******************
 % prf opts
-opt = getPRFOpts(prfOptsPath);
 
+%% NYI 
+% opt = getPRFOpts(prfOptsPath);
+opt = [];
 
 
 %% Run the analyzePRF alogithm
@@ -182,57 +184,5 @@ end
 end
 
 
-function opt = getPRFOpts(glmOptsPath)
-
-if ~exist('glmOptsPath', 'var') || isempty(glmOptsPath)
-    glmOptsPath = glmOptsMakeDefaultFile; 
-end
-
-json = jsondecode(fileread(glmOptsPath));
-
-if isfield(json, 'hrfmodel'), hrfmodel = json.hrfmodel;
-else, hrfmodel = 'optimize'; end
-
-if isfield(json, 'hrfknobs'), hrfknobs = json.hrfknobs;
-else, hrfknobs = []; end
-
-if isfield(json, 'opt'), opt = json.opt; else, opt = []; end
-
-end
-
-
-function pth = glmOptsMakeDefaultFile()
-    % see GLMdenoisedata for descriptions of optional input 
-    
-    % hrf
-    json.hrfmodel = 'optimize';  %
-    json.hrfknobs = [];  % 
-    
-    % other opts
-    json.opt.extraregressors = []; 
-    json.opt.maxpolydeg = []; 
-    json.opt.seed = [];
-    json.opt.bootgroups = [];
-    json.opt.numforhrf = [];
-    json.opt.hrffitmask = [];
-    json.opt.brainthresh = [];
-    json.opt.brainR2 = [];
-    json.opt.brainexclude = [];
-    json.opt.numpcstotry = [];
-    json.opt.pcR2cutoff = [];
-    json.opt.pcR2cutoffmask = [];
-    json.opt.pcstop = [];
-    json.opt.pccontrolmode = [];
-    json.opt.numboots = [];
-    json.opt.denoisespec = [];
-    json.opt.wantpercentbold = [];
-    json.opt.hrfthresh = [];
-    json.opt.noisepooldirect = [];
-    json.opt.wantparametric = [];
-    json.opt.wantsanityfigures = [];
-    json.opt.drawfunction = [];
-                  
-    pth = fullfile(tempdir, 'glmOpts.json');
-    savejson('', json, 'FileName', pth);
-end          
+  
            
