@@ -122,13 +122,29 @@ if ~exist('tr', 'var') || isempty(tr)
     end
 end
 
-%****** Optional inputs to analyzePRF *******************
-% prf opts
+%% Optional inputs to analyzePRF 
+%
+[averageScans,opt] = getPRFOpts(prfOptsPath);
 
-%% NYI 
-% opt = getPRFOpts(prfOptsPath);
-opt = [];
 
+% test
+if ~isempty(averageScans)
+   
+    % average the requested scans and reduce the stimuli to the unique
+    % scans
+    [~, ia] = unique(averageScans);
+    dims = ndims(data{1});
+    
+    mn = cell(1,length(ia));
+    
+    for ii = 1:length(ia)
+        whichscans = averageScans==ia(ii);
+        datatmp = catcell(dims+1, data(whichscans));
+        mn{ii} =  mean(datatmp, dims+1);
+    end
+    data = mn;
+    stimulus = stimulus(ia);
+end
 
 %% Run the analyzePRF alogithm
 results  = analyzePRF (stimulus,data,tr,opt);
@@ -184,5 +200,44 @@ end
 end
 
 
+function [averageScans,opt] = getPRFOpts(prfOptsPath)
+
+if ~exist('prfOptsPath', 'var') || isempty(prfOptsPath)
+    prfOptsPath = prfOptsMakeDefaultFile; 
+end
+
+json = jsondecode(fileread(prfOptsPath));
+
+
+if isfield(json, 'averageScans'), averageScans = json.averageScans;
+else, averageScans = []; end
+
+if isfield(json, 'opt'), opt = json.opt; else, opt = []; end
+
+end
+
+
+function pth = prfOptsMakeDefaultFile()
+    % see analyzePRF for descriptions of optional input 
+    
+    % average scans with identical stimuli
+    json.averageScans = [];  % 
+        
+    % other opts
+    json.opt.vxs            = []; 
+    json.opt.wantglmdenoise = []; 
+    json.opt.hrf            = [];
+    json.opt.maxpolydeg     = [];
+    json.opt.numperjob      = [];
+    json.opt.xvalmode       = [];
+    json.opt.seedmode       = [];
+    json.opt.maxiter        = [];
+    json.opt.display = 'final';
+    json.opt.typicalgain = [];
+
+                  
+    pth = fullfile(tempdir, 'prfOpts.json');
+    savejson('', json, 'FileName', pth);
+end      
   
            
