@@ -43,7 +43,7 @@ while derpth is None or sub is None:
 if derpth is None: die('Could not find derivatives path')
 if sub is None: die('Could not deduce subject from BIDS path')
 if os.path.isdir(os.path.join(derpth, 'freesurfer')):
-    sub = os.path.join(derpth, 'freesurfer', sub)
+    sub = os.path.join(derpth, 'freesurfer', 'sub-'+sub)
 elif 'SUBJECTS_DIR' in os.environ:
     tmp = os.path.join(os.environ['SUBJECTS_DIR'], sub)
     if os.path.isdir(tmp): sub = tmp
