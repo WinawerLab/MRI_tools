@@ -205,6 +205,17 @@ figuredir   = fullfile (projectDir,'derivatives','GLMdenoise', modelType, ...
 
 if ~exist(figuredir, 'dir'); mkdir(figuredir); end
 
+%% Save input arguments
+inputVar = struct('projectDir', projectDir, 'subject', subject, ...
+    'session', session, 'tasks', tasks, 'runnums', runnums, ...
+    'dataFolder', dataFolder, 'dataStr', dataStr, 'designFolder', designFolder, ...
+    'stimdur', stimdur, 'modelType', modelType, 'glmOptsPath', glmOptsPath, 'tr', tr);
+    
+fname = sprintf('sub-%s_ses-%s_%s_inputVar.json', subject, session, modelType);
+
+savejson('',inputVar,fullfile(figuredir,fname));
+
+
 %% Run the denoising alogithm
 
 % Check whether conditions repeat across runs. If each run has unique
