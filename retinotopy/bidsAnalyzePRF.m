@@ -1,8 +1,8 @@
 function results = bidsAnalyzePRF(projectDir, subject, session, tasks, runnums, ...
-        dataFolder, dataStr, apertureFolder, prfOptsPath, tr)
+        dataFolder, dataStr, apertureFolder, modelType, prfOptsPath, tr)
 %
 % results = bidsAnalyzePRF(projectDir, subject, [session], [tasks], [runnums], ...
-%        [dataFolder], [apertureFolder], [glmOptsPath], [tr]);
+%        [dataFolder], [apertureFolder], [modelType], [glmOptsPath], [tr]);
 %
 % Input
 %
@@ -36,6 +36,8 @@ function results = bidsAnalyzePRF(projectDir, subject, session, tasks, runnums, 
 %                           and should contain .mat files
 %                           default = [], which means no subfolder:
 %                               <projectDir>/derivatives/stim_apertures/<subject>/<session>/
+%     modelType:        name of folder and file to store outputs of analyzePRF (string)
+%                           default = apertureFolder;
 %     prfOptsPath:      path to json file specifying analyzePRF options
 %                           default = [];
 %     tr:               repetion time for EPI
@@ -59,13 +61,14 @@ function results = bidsAnalyzePRF(projectDir, subject, session, tasks, runnums, 
 %     apertureFolder    = [];
 %     prfOptsPath       = [];    
 %     tr                = [];
-%       
+%     modelType         = [];
+%
 %     % make the stimulus apertures 
 %     bidsStimulustoApertures(projectDir, subject, session, tasks, runnums, apertureFolder);
 %
 %     % run the prf analysis
 %     bidsAnalyzePRF(projectDir, subject, session, tasks, runnums, ...
-%        dataFolder, dataStr, apertureFolder, prfOptsPath, tr)
+%        dataFolder, dataStr, apertureFolder, modelType, prfOptsPath, tr)
 %
 
 %% Check inputs
@@ -99,7 +102,12 @@ aperturePath = fullfile(projectDir, 'derivatives', 'stim_apertures', ...
 if ~exist(aperturePath, 'dir')
     error('Aperture path not found: %s', aperturePath); 
 end
-     
+ 
+% <modelType>
+if ~exist('modelType', 'var') || isempty(modelType)
+    modelType = apertureFolder;
+end
+
 %% Create analyzePRF inputs
 
 %****** Required inputs to analyzePRF *******************
@@ -149,14 +157,14 @@ end
 %% Run the analyzePRF alogithm
 results  = analyzePRF (stimulus,data,tr,opt);
 
-%   <figuredir>
-resultsdir   = fullfile (projectDir,'derivatives','analyzePRF', ...
+%   <resultsdir>
+resultsdir   = fullfile (projectDir,'derivatives','analyzePRF', modelType, ...
                  sprintf('sub-%s',subject), sprintf('ses-%s',session));
 
 if ~exist(resultsdir, 'dir'); mkdir(resultsdir); end
 
 % save the results
-fname = sprintf('sub-%s_ses-%s_results', subject, session);
+fname = sprintf('sub-%s_ses-%s_%s_results', subject, session, modelType);
 save(fullfile(resultsdir, fname), 'results', '-v7.3');
 
 end
@@ -232,8 +240,8 @@ function pth = prfOptsMakeDefaultFile()
     json.opt.xvalmode       = [];
     json.opt.seedmode       = [];
     json.opt.maxiter        = [];
-    json.opt.display = 'final';
-    json.opt.typicalgain = [];
+    json.opt.display        = 'off';
+    json.opt.typicalgain    = [];
 
                   
     pth = fullfile(tempdir, 'prfOpts.json');

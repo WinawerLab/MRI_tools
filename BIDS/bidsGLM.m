@@ -38,7 +38,7 @@ function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
 %                               <projectDir>/derivatives/design_matrices/<subject>/<session>/
 %     stimdur:          duration of trials in seconds
 %                           default = tr;
-%     modelType:        name of folder to store outputs of GLMdenoised (string)
+%     modelType:        name of folder to store outputs of GLMdenoise (string)
 %                           default = designFolder;
 %     glmOptsPath:      path to json file specifying GLMdenoise options
 %                           default = [];
