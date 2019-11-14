@@ -154,14 +154,26 @@ if ~isempty(averageScans)
     stimulus = stimulus(ia);
 end
 
-%% Run the analyzePRF alogithm
-results  = analyzePRF (stimulus,data,tr,opt);
+%% Save input arguments
+inputVar = struct('projectDir', projectDir, 'subject', subject, ...
+    'session', session, 'tasks', tasks, 'runnums', runnums, ...
+    'dataFolder', dataFolder, 'dataStr', dataStr, 'apertureFolder', apertureFolder, ...
+    'modelType', modelType, 'prfOptsPath', prfOptsPath, 'tr', tr);
+    
+fname = sprintf('sub-%s_ses-%s_%s_inputVar.json', subject, session, modelType);
 
 %   <resultsdir>
 resultsdir   = fullfile (projectDir,'derivatives','analyzePRF', modelType, ...
                  sprintf('sub-%s',subject), sprintf('ses-%s',session));
 
 if ~exist(resultsdir, 'dir'); mkdir(resultsdir); end
+
+savejson('',inputVar,fullfile(resultsdir,fname));
+
+
+%% Run the analyzePRF alogithm
+results  = analyzePRF (stimulus,data,tr,opt);
+
 
 % save the results
 fname = sprintf('sub-%s_ses-%s_%s_results', subject, session, modelType);
