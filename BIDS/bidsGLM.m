@@ -38,7 +38,7 @@ function results = bidsGLM(projectDir, subject, session, tasks, runnums, ...
 %                               <projectDir>/derivatives/design_matrices/<subject>/<session>/
 %     stimdur:          duration of trials in seconds
 %                           default = tr;
-%     modelType:        name of folder to store outputs of GLMdenoised (string)
+%     modelType:        name of folder to store outputs of GLMdenoise (string)
 %                           default = designFolder;
 %     glmOptsPath:      path to json file specifying GLMdenoise options
 %                           default = [];
@@ -204,6 +204,17 @@ figuredir   = fullfile (projectDir,'derivatives','GLMdenoise', modelType, ...
                  sprintf('sub-%s',subject), sprintf('ses-%s',session), 'figures');
 
 if ~exist(figuredir, 'dir'); mkdir(figuredir); end
+
+%% Save input arguments
+inputVar = struct('projectDir', projectDir, 'subject', subject, ...
+    'session', session, 'tasks', tasks, 'runnums', runnums, ...
+    'dataFolder', dataFolder, 'dataStr', dataStr, 'designFolder', designFolder, ...
+    'stimdur', stimdur, 'modelType', modelType, 'glmOptsPath', glmOptsPath, 'tr', tr);
+    
+fname = sprintf('sub-%s_ses-%s_%s_inputVar.json', subject, session, modelType);
+
+savejson('',inputVar,fullfile(figuredir,fname));
+
 
 %% Run the denoising alogithm
 
