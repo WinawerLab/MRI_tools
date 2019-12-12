@@ -242,7 +242,8 @@ function pth = prfOptsMakeDefaultFile()
     
     % average scans with identical stimuli
     json.averageScans = [];  % 
-        
+    json.stimwidth    = 24.2;  % degrees
+    
     % other opts
     json.opt.vxs            = []; 
     json.opt.wantglmdenoise = []; 
