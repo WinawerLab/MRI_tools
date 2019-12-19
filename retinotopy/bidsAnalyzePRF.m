@@ -112,7 +112,7 @@ end
 
 %****** Required inputs to analyzePRF *******************
 % < stimulus>
-stimulus = getStimulus(aperturePath, tasks, runnums);
+[stimulus, stimwidthpix] = getStimulus(aperturePath, tasks, runnums);
 
 % <data>
 data = bidsGetPreprocData(dataPath, dataStr, tasks, runnums);
@@ -132,10 +132,8 @@ end
 
 %% Optional inputs to analyzePRF 
 %
-[averageScans,opt] = getPRFOpts(prfOptsPath);
+[averageScans,stimwidthdeg,opt] = getPRFOpts(prfOptsPath);
 
-
-% test
 if ~isempty(averageScans)
    
     % average the requested scans and reduce the stimuli to the unique
@@ -155,10 +153,12 @@ if ~isempty(averageScans)
 end
 
 %% Save input arguments
+
 inputVar = struct('projectDir', projectDir, 'subject', subject, ...
     'session', session, 'tasks', tasks, 'runnums', runnums, ...
     'dataFolder', dataFolder, 'dataStr', dataStr, 'apertureFolder', apertureFolder, ...
-    'modelType', modelType, 'prfOptsPath', prfOptsPath, 'tr', tr);
+    'modelType', modelType, 'prfOptsPath', prfOptsPath, 'tr', tr, 'stimwidthdeg', stimwidthdeg, ...
+    'stimwidthpix', stimwidthpix);
     
 fname = sprintf('sub-%s_ses-%s_%s_inputVar.json', subject, session, modelType);
 
@@ -185,7 +185,7 @@ end
 %% ******************************
 % ******** SUBROUTINES **********
 % *******************************
-function stimulus = getStimulus(aperturePath, tasks, runnums)
+function [stimulus, stimwidthpix] = getStimulus(aperturePath, tasks, runnums)
 % <stimulus> provides the apertures as a cell vector of R x C x time.
 %   values should be in [0,1].  the number of time points can differ across runs.
 
@@ -216,11 +216,13 @@ for ii = 1:length(tasks)
             scan         = scan+1;
         end
     end
+    
+    stimwidthpix = size(stimulus{1},2);
+
 end
 end
 
-
-function [averageScans,opt] = getPRFOpts(prfOptsPath)
+function [averageScans, stimwidth, opt] = getPRFOpts(prfOptsPath)
 
 if ~exist('prfOptsPath', 'var') || isempty(prfOptsPath)
     prfOptsPath = prfOptsMakeDefaultFile; 
@@ -231,6 +233,9 @@ json = jsondecode(fileread(prfOptsPath));
 
 if isfield(json, 'averageScans'), averageScans = json.averageScans;
 else, averageScans = []; end
+
+if isfield(json, 'stimwidth'), stimwidth = json.stimwidth;
+else, error('Stim width not specified in options file'); end
 
 if isfield(json, 'opt'), opt = json.opt; else, opt = []; end
 
