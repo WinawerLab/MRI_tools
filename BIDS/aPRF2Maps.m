@@ -15,15 +15,14 @@ function [] = aPRF2Maps(bidsfolder, subject, session, desc)
 %  subject    =  'wlsubj042'
 %  session    = '01';
 %  desc       = 'coarse';
+%  aPRF2Maps(bidsfolder, subject, session, desc)
 
 % Path to analyze PRF results
 pth = fullfile(bidsfolder, 'derivatives', 'analyzePRF', desc, ['sub-' subject], ['ses-' session]);
 
 % JSON file with input arguments to analyzePRF
 opts = loadjson(fullfile(pth, sprintf('sub-%s_ses-%s_%s_inputVar.json', subject, session, desc)));
-tmp = loadjson(opts.prfOptsPath);
-stimwidth = tmp.stimwidth;
-apertures = fullfile(fileparts(opts.prfOptsPath)
+pix2deg = @(x) x * opts.stimwidthdeg / opts.stimwidthpix;
 
 % AnalyzePRF results file
 load(fullfile(pth, sprintf('sub-%s_ses-%s_%s_results.mat', subject, session, desc)), 'results');
@@ -43,8 +42,6 @@ mgz = MRIread(fullfile(fspth, 'mri', 'orig.mgz'));
 leftidx  = 1:numel(lcurv);
 rightidx = (1:numel(rcurv))+numel(lcurv);
 
-
-
 % polar angle in radians
 mgz.vol = deg2rad(results.ang(leftidx));
 MRIwrite(mgz, fullfile(pth, 'lh.angle.mgz'));
@@ -52,19 +49,35 @@ mgz.vol = deg2rad(results.ang(rightidx));
 MRIwrite(mgz, fullfile(pth, 'rh.angle.mgz'));
 
 % eccentricity (convert from pix 2 deg)
-mgz.vol = results.ecc(leftidx);
-MRIwrite(mgz, fullfile(pth, 'lh.angle.mgz'));
-mgz.vol = results.ecc(rightidx);
-MRIwrite(mgz, fullfile(pth, 'rh.angle.mgz'));
+mgz.vol = pix2deg(results.ecc(leftidx));
+MRIwrite(mgz, fullfile(pth, 'lh.eccen.mgz'));
+mgz.vol = pix2deg(results.ecc(rightidx));
+MRIwrite(mgz, fullfile(pth, 'rh.eccen.mgz'));
 
 % pRFsize (convert from pix 2 deg)
+mgz.vol = pix2deg(results.rfsize(leftidx));
+MRIwrite(mgz, fullfile(pth, 'lh.sigma.mgz'));
+mgz.vol = pix2deg(results.rfsize(rightidx));
+MRIwrite(mgz, fullfile(pth, 'rh.sigma.mgz'));
 
 % r2
+mgz.vol = results.R2(leftidx);
+MRIwrite(mgz, fullfile(pth, 'lh.vexpl.mgz'));
+mgz.vol = results.R2(rightidx);
+MRIwrite(mgz, fullfile(pth, 'rh.vexpl.mgz'));
 
 % gain
+mgz.vol = results.gain(leftidx);
+MRIwrite(mgz, fullfile(pth, 'lh.gain.mgz'));
+mgz.vol = results.gain(rightidx);
+MRIwrite(mgz, fullfile(pth, 'rh.gain.mgz'));
 
+% exponent
+mgz.vol = results.expt(leftidx);
+MRIwrite(mgz, fullfile(pth, 'lh.expon.mgz'));
+mgz.vol = results.expt(rightidx);
+MRIwrite(mgz, fullfile(pth, 'rh.expon.mgz'));
 
-
-
+end
 
 

@@ -175,9 +175,12 @@ savejson('',inputVar,fullfile(resultsdir,fname));
 results  = analyzePRF (stimulus,data,tr,opt);
 
 
-% save the results
+% save the results as matlab file
 fname = sprintf('sub-%s_ses-%s_%s_results', subject, session, modelType);
 save(fullfile(resultsdir, fname), 'results', '-v7.3');
+
+% save the results as mgz files
+aPRF2Maps(projectDir, subject, session, modelType);
 
 end
 
