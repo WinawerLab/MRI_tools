@@ -1,6 +1,6 @@
 function design = bidsTSVtoDesign(projectDir, subject, session, tasks, runnum, designFolder, tr, dataFolder, dataStr)
 %Convert tsv files from BIDS directory to design matrices for GLM
-% design = bidsTSVtoDesign(projectDir, subject, [session], [tasks], [runnum], [designFolder])
+% design = bidsTSVtoDesign(projectDir, subject, [session], [tasks], [runnum], [designFolder], [tr], [dataFolder], [dataStr])
 %
 % Input
 %     projectDir:       path where the BIDS projects lies (string)
@@ -71,15 +71,15 @@ pth = fullfile(projectDir, sprintf('sub-%s', subject), ...
 assert(exist(pth, 'dir')>0)
 
 if usePreproc, datapath = fullfile(projectDir, 'derivatives', dataFolder, ...
-        sprintf('sub-%s', subject), sprintf('ses-%s', session));
+        sprintf('sub-%s', subject), sprintf('ses-%s', session), 'func');
 else
     datapath = pth;
 end
 
-% total number of runs across tasks
+% Total number of runs across tasks
 n = sum(cellfun(@numel, runnum));
 
-% initialize design matrix
+% Initialize design matrix
 design = cell(1,n);
 T      = cell(1,n);
 numvol = zeros(1,n);
@@ -127,7 +127,7 @@ unique_conditions = unique(all_trial_types);
 num_conditions = length(unique_conditions);
 
 
-%   loop over all runs and make each matrix
+% Loop over all runs and make each matrix
 for ii = 1:n   
     
     m = zeros(numvol(ii), num_conditions);
