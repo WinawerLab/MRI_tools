@@ -206,6 +206,7 @@ figuredir   = fullfile (projectDir,'derivatives','GLMdenoise', modelType, ...
 if ~exist(figuredir, 'dir'); mkdir(figuredir); end
 
 %% Save input arguments
+
 inputVar = struct('projectDir', projectDir, 'subject', subject, ...
     'session', session, 'tasks', tasks, 'runnums', runnums, ...
     'dataFolder', dataFolder, 'dataStr', dataStr, 'designFolder', designFolder, ...
@@ -216,19 +217,19 @@ fname = sprintf('sub-%s_ses-%s_%s_inputVar.json', subject, session, modelType);
 savejson('',inputVar,fullfile(figuredir,fname));
 
 
-%% Run the denoising alogithm
+%% Run the denoising algorithm
 
 % Check whether conditions repeat across runs. If each run has unique
 % predictors, then we cannot cross-validate, and therefore skip call
 % GLMestimatemodel rather than GLMdenoisedata
 
 preds=cell2mat(cellfun(@(x) sum(x)>0, design, 'UniformOutput', false)');
-if any(sum(preds)), xval = true; else, xval = false; end
+if any(sum(preds)>1), xval = true; else, xval = false; end
 if length(design) == 1, xval = false; end
 
 if xval
 
-    results  = GLMdenoisedata (design,data,stimdur,tr,hrfmodel,hrfknobs,opt,figuredir);
+    results = GLMdenoisedata (design,data,stimdur,tr,hrfmodel,hrfknobs,opt,figuredir);
 
 else
     
