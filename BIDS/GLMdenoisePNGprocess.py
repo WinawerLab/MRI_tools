@@ -49,14 +49,14 @@ elif 'SUBJECTS_DIR' in os.environ:
     if os.path.isdir(tmp): sub = tmp
 else: die('No derivatives/freesurfer or $SUBJECTS_DIR/%s directory found', sub)
 
+print('FreeSurfer Path: %s' % sub)
+print('Image Path:      %s' % pth)
+
 try:
     sub = ny.freesurfer_subject(sub)
     lh = sub.lh
     rh = sub.rh
-except: die('Failed to load freesurfer subject')
-
-print('FreeSurfer Path: %s' % sub)
-print('Image Path:      %s' % pth)
+except: raise die('Failed to load freesurfer subject')
 
 sys.stdout.write('\nPreparing flat-maps...')
 sys.stdout.flush()
