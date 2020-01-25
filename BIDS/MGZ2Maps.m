@@ -1,5 +1,4 @@
 function MGZ2Maps(bidsfolder, subject, session, desc, cmap)
-
 % Visualize an MGZ ret data on a freesurfer surface in Matlab 
 %
 % MGZ2Maps(bidsfolder, subject, session, desc, cmap)
@@ -26,7 +25,6 @@ function MGZ2Maps(bidsfolder, subject, session, desc, cmap)
 % desc       = 'coarse';
 
 %caxis([0 4]);
-
 
 if ~exist('cmap','var') || isempty(cmap)
   cmap = jet(64);
@@ -69,31 +67,33 @@ for thisMap = 1:length(map_file_lh)
     map_rh{thisMap,:} = load_mgh(map_file_rh{thisMap,1});
 end
 
-%loop though and set all nans to zero otherwise those vertices will not be visible in the mesh
+% loop though and set all nans to zero otherwise those vertices will not be visible in the mesh
 for thisMap = 1:length(map_lh)
     map_lh{thisMap,:}(isnan(map_lh{thisMap,:})) = 0;
     map_rh{thisMap,:}(isnan(map_rh{thisMap,:})) = 0;
 end
 
 
-% Plot and save out left hemi figs
+% plot left and right hemisphere into a figure and save it out
+% we can use 'view' to change the focus on the mesh
+% I've set it to V1/V2/V3
 for thisFig = 1:length(map_lh)
     clf
+    subplot(1,2,1)
     plot_mesh(faces_l, vertices_l, map_lh{thisFig,1}, cmap);
-    set(gcf,'Visible','off');
-    title((sprintf('LH.%s', mapsList{1,thisFig})));
     set_view(gcf)
-    saveas(gcf, ([figureDir (sprintf('/LH_%s.png', mapsList{1,thisFig}))]));
-end
+    view(45,0);
 
-%and the right hemi
-for thisFig = 1:length(map_rh)
-    clf
+    subplot(1,2,2)
     plot_mesh(faces_r, vertices_r, map_rh{thisFig,1}, cmap);
-    set(gcf,'Visible','off');
-    title((sprintf('RH.%s', mapsList{1,thisFig})));
+    set(gcf,'Visible','off'); %stop the figure being displayed
+    title((sprintf('%s', mapsList{1,thisFig})));
     set_view(gcf)
-    saveas(gcf, ([figureDir (sprintf('/RH_%s.png', mapsList{1,thisFig}))]));
+    view(-45,0);
+
+    % save it out
+    saveas(gcf, ([figureDir (sprintf('/%s_maps.png', mapsList{1,thisFig}))]));
+    
 end
 
 %% relevant sub functions
