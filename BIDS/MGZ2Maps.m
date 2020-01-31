@@ -112,7 +112,7 @@ function set_view(gcf)
     h=light; lightangle(h,  45, 45); lighting gouraud;
     h=light; lightangle(h, -45, 45); lighting gouraud;
     h=light; lightangle(h, -45, -90); lighting gouraud;
-    set(gcf, 'Position', [150 100 1500 1250]);
+    set(gcf, 'Position', [150 100 750 625]);
     axis tight    
 end
 end
