@@ -84,7 +84,7 @@ def main(args):
     except: raise ValueError('No subject %s; you may need to set your SUBJECTS_DIR' % sub)
     affine = np.asarray([[float(ss) for ss in s.split()] for s in lines[4:8]])
     affinv = np.linalg.inv(affine)
-    displm = np.dot(sub.voxel_to_native_matrix, np.linalg.inv(sub.voxel_to_vertex_matrix))
+    displm = sub.lh.affine
     # loop over the given EPIs
     for epi in epis:
         note('Processing EPI %s...' % epi)
