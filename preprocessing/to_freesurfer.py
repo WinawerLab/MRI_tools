@@ -107,7 +107,7 @@ def main(args):
         # okay, now project to the surface
         if args.surface:
             note('   - Projecting to surface...')
-            (ldat, rdat) = sub.image_to_cortex(newimg, args.layer,
+            (ldat, rdat) = sub.image_to_cortex(newimg, surface=args.layer, 
                                                method=args.method, dtype=np.float32)
             # we need to fix the dimensions...
             for (d,h) in zip([ldat,rdat], ['lh','rh']):
