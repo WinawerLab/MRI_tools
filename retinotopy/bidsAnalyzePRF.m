@@ -183,7 +183,7 @@ save(fullfile(resultsdir, fname), 'results', '-v7.3');
 aPRF2Maps(projectDir, subject, session, modelType);
 
 % save out .png files of angle, ecc, sigma, R2 for lh and rh
-MGZ2Maps(projectDir, subject, session, modelType, []);
+Maps2PNG(projectDir, subject, session, modelType, []);
 
 end
 
