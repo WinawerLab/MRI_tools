@@ -1,7 +1,7 @@
 function Maps2PNG(bidsfolder, subject, session, desc)
 % Visualize an MGZ ret data on a freesurfer surface in Matlab
 %
-% MGZ2Maps(bidsfolder, subject, session, desc, cmap)
+% Maps2PNG(bidsfolder, subject, session, desc)
 %
 % INPUTS
 %   bidsfolder     : path to BIDS project
@@ -9,11 +9,7 @@ function Maps2PNG(bidsfolder, subject, session, desc)
 %   session        : BIDS session name
 %   desc           : name of subfolder reflecting model/design that was
 %                    used for analysis;
-%   cmap           : (optional) colormap used to map values in MGZ file to
-%                     a colorscale. Should be an 3-column wide RGB array
-%                     [default = 64 length built in Matlab jet colormap].
-%
-%
+
 % Example
 % bidsfolder = '/Volumes/server/Projects/SampleData/BIDS/';
 % subject    = 'wlsubj042';
