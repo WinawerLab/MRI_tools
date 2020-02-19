@@ -20,6 +20,9 @@ function Maps2PNG(bidsfolder, subject, session, desc)
 
 % set up our paths
 pth = fullfile(bidsfolder, 'derivatives/analyzePRF/', desc, ['sub-' subject], ['ses-' session]);
+freesurfer_dir =  fullfile(bidsfolder, 'derivatives/freesurfer');
+setenv('SUBJECTS_DIR',freesurfer_dir)
+
 fspth = fullfile(bidsfolder, 'derivatives', 'freesurfer',  ['sub-' subject], 'surf');
 figureDir = fullfile(pth, 'figures');
 
