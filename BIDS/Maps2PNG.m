@@ -75,7 +75,18 @@ for thisFig = 1:length(mapsList)
         
         myroi = zeros(size(map_file.vexpl.(hemispheres{hemi})));
         myroi(roi) = 1;
-        thr  = double(map_file.vexpl.(hemispheres{hemi})>0.15) & double(map_file.eccen.(hemispheres{hemi})<12.4) & myroi ;
+        
+        if contains(desc,'coarse') && thisFig == 1
+            
+            if nanmean(map_file.vexpl.(hemispheres{hemi})) < 0.11
+                map_file.vexpl.(hemispheres{hemi}) = double(map_file.vexpl.(hemispheres{hemi})*100);
+            end
+            
+            thr  = double(map_file.vexpl.(hemispheres{hemi})>0.15) & double(map_file.eccen.(hemispheres{hemi})<10) & myroi ;
+
+        else
+            thr  = double(map_file.vexpl.(hemispheres{hemi})>0.15) & double(map_file.eccen.(hemispheres{hemi})<10) & myroi ;
+        end
         
         subplot(2,2,hemi)
         plot_mesh(faces, vertices, curv, 'gray');
