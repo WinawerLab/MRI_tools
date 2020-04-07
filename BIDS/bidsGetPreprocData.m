@@ -68,11 +68,6 @@ for ii = 1:length(tasks)
                 end
                 fullDatafile{scan}= [];
                 data{scan}           = cat(2,tempData(1).vol, tempData(2).vol);
-                
-                %%% convert to signal change!%%%
-                dc_bold = nanmean(data{scan},4);
-                data{scan} =  100*(data{scan} - dc_bold)./dc_bold;
-                
                 info{scan}           = rmfield(tempData(1), 'vol');
                 info{scan}.ImageSize = size(tempData(1).vol);
             case '.gii'
