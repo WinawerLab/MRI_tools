@@ -38,7 +38,7 @@ os.chdir(pth)
 while derpth is None or sub is None:
     (pp,f) = os.path.split(pp)
     if len(f) == 0: break
-    elif f.startswith('sub-'): sub = f
+    elif f.startswith('sub-'): sub = f[4:]
     elif f == 'derivatives': derpth = os.path.join(pp, f)
 if derpth is None: die('Could not find derivatives path')
 if sub is None: die('Could not deduce subject from BIDS path')
