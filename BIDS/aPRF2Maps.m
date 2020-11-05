@@ -61,10 +61,10 @@ mgz.vol = pix2deg(results.rfsize(rightidx));
 MRIwrite(mgz, fullfile(pth, 'rh.sigma.mgz'));
 
 % r2 (convert from percentage to fraction)
-mgz.vol = results.R2(leftidx)/100;
-MRIwrite(mgz, fullfile(pth, 'lh.vexpl.mgz'));
-mgz.vol = results.R2(rightidx)/100; 
-MRIwrite(mgz, fullfile(pth, 'rh.vexpl.mgz'));
+% mgz.vol = results.R2(leftidx)/100;
+% MRIwrite(mgz, fullfile(pth, 'lh.vexpl.mgz'));
+% mgz.vol = results.R2(rightidx)/100; 
+% MRIwrite(mgz, fullfile(pth, 'rh.vexpl.mgz'));
 
 % gain (in percent signal change)
 mgz.vol = results.gain(leftidx);
