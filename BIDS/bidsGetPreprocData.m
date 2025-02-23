@@ -45,6 +45,13 @@ for ii = 1:length(tasks)
         istxt = contains({fname.name}, {'.json', '.tsv'});
         fname = fname(~istxt);
         
+        % try other string format task-<taskname><runname>
+        if isempty(fname)
+            altfnamePrefix  = sprintf('*_task-%s%d_*%s*',...
+                        tasks{ii},runnums{ii}(jj), dataStr);
+            fname = dir(fullfile(dataPath, altfnamePrefix));
+        end
+
         % This guarantees that we found at least one
         assert(~isempty(fname));
         

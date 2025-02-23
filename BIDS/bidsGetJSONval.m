@@ -25,6 +25,13 @@ for ii = 1:length(tasks)
         if  ~strcmp(jsonPrefix,jsonPrefixZeroPad)
             jsonName    = [jsonName ;dir(fullfile(rawDataPath, jsonPrefixZeroPad))];
         end
+
+        % alternative string format: task-<taskname><run>
+        if isempty(jsonName)
+            altjsonPrefix        = sprintf('*_task-%s%d_bold.json',tasks{ii}, runnums{ii}(jj))
+            jsonName             = dir(fullfile(rawDataPath, altjsonPrefix));
+        end
+
          % This guarantees that we found at least one
         assert(~isempty(jsonName));
         

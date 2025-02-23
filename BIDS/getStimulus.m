@@ -24,8 +24,12 @@ for ii = 1:length(tasks)
             error (['Stim file *_task-%s_run-%d_aperture.mat'...
                     ' was not found'],tasks{ii}, runnums{ii}(jj))
         else
-            tmp = load(fullfile(stimFiles(prfIdx).folder,stimFiles(prfIdx).name), 'stimulus');
-            stimulus{scan} = tmp.stimulus;
+            tmp = load(fullfile(stimFiles(prfIdx).folder,stimFiles(prfIdx).name)); %, 'stimulus');
+            try
+                stimulus{scan} = tmp.stimulus;
+            catch
+                stimulus{scan} = tmp.stim;
+            end
             scan         = scan+1;
         end
     end

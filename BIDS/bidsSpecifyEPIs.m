@@ -80,19 +80,20 @@ if ~exist('runnum', 'var') || isempty(runnum)
     
     runnum = cell(1,length(tasks));
     for ii = 1:length(tasks)
-        files = dir(fullfile(sessionDir, 'func', sprintf('*task-%s_*bold.nii*', tasks{ii})));
+        files = dir(fullfile(sessionDir, 'func', sprintf('*task-%s*_*bold.nii*', tasks{ii})));
         siteModality = 'mri';
         if isempty (files)
-            files = dir(fullfile(sessionDir, 'meg', sprintf('*task-%s_*meg.sqd', tasks{ii})));
+            files = dir(fullfile(sessionDir, 'meg', sprintf('*task-%s*_*meg.sqd', tasks{ii})));
             siteModality = 'meg';
             if isempty (files)
-                files = dir(fullfile(sessionDir, 'ieeg', sprintf('*task-%s_*ieeg.eeg', tasks{ii})));
+                files = dir(fullfile(sessionDir, 'ieeg', sprintf('*task-%s*_*ieeg.eeg', tasks{ii})));
                 siteModality = 'ecog';
             end
         end
         for jj = 1:length(files)
             runnum{ii}(jj) = str2double(bidsGet(files(jj).name, 'run'));
         end
+
     end
     
 end

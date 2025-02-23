@@ -29,7 +29,24 @@ end
 idx = find(contains(params, param));
     
 if isempty(idx)
-    error('The input string does not contain the requested field. \n\tInput string: %s\n\tRequested field: %s', str, param);
+    warning('The input string does not contain the BIDS formatted requested field. \n\tInput string: %s\n\tRequested field: %s', str, param);
+    
+    % work around to accomodate non-BIDS compliant format task-<taskname><runnumber>
+    taskIdx = find(strcmp(params, 'task'));
+    if ~isempty(taskIdx)  % Ensure 'task' exists in params
+        taskValue = vals{taskIdx};  % Extract the task name
+        
+        taskName = regexprep(taskValue, '\d+$', '');  % Remove trailing digits
+    
+        % Display results
+        disp(['Original task value: ', taskValue]);
+        disp(['Task name without numbers: ', taskName]);
+    else
+        error('Task parameter not found in params array.');
+    end
+
+    val = nonbidsGetrun(str, taskName);
+
 else
     val = vals{idx};
 end
