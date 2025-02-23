@@ -7,8 +7,15 @@ function writeMGZ(bidsDir, subjectname, data, saveFolder, fileName)
     end
 
     hh = {'lh','rh'};
+
+    % remove conflicting file with duplicate name from path
+    conflictingPaths = which('-all', 'mergestruct');
+    index = find(contains(conflictingPaths, 'cvncode')); % identify the one of interest
+    addpath(fileparts(conflictingPaths{index}), '-begin');
+
     % get dimensions
     hSize = getSurfsize(fsDir, subjectname); % get hemi size
+
     hSizeIdx=[1,hSize(1);hSize(1)+1,sum(hSize)];
     % save mgz
     origfile = fullfile(fsDir, subjectname, 'mri', 'orig.mgz');

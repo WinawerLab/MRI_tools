@@ -1,4 +1,4 @@
-function f = get_surfsize(fsDir, sourcesubject)
+function f = getSurfsize(fsDir, sourcesubject)
 
 fsdirFROM=sprintf('%s/%s/surf',fsDir,sourcesubject);
 

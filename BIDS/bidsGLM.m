@@ -237,15 +237,6 @@ savejson('',inputVar,fullfile(figuredir,fname));
 % Cross validation criteria are checked within the function (e.g., checks
 % if repeat trials occur across runs to do the cross validation)
 
-if all(size(design)) && all(size(data))
-    design=design{1}; data=data{1};
-
-    % ensure that the vector is units x time (no extra dimensions)
-    data = squeeze(data);
-    data = single(data);
-
-end
-
 [results,resultsdesign] = GLMestimatesingletrial(design,data,stimdur,tr,figuredir,opt);
 
 % save the results
